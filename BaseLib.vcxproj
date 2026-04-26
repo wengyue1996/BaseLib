@@ -151,15 +151,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="algorithms\searching.cpp" />
-    <ClCompile Include="algorithms\sorting.cpp" />
-    <ClCompile Include="data-structures\linked_list.cpp" />
-    <ClCompile Include="data-structures\queue.cpp" />
-    <ClCompile Include="data-structures\stack.cpp" />
-    <ClCompile Include="examples\log_demo.cpp" />
-    <ClCompile Include="network_test\network_test.cpp" />
-    <ClCompile Include="network_test\TcpClient.cpp" />
-    <ClCompile Include="network_test\TcpServer.cpp" />
     <ClCompile Include="src\core\logger.cpp" />
     <ClCompile Include="src\io\filesystem.cpp" />
     <ClCompile Include="src\io\json.cpp" />
@@ -188,22 +179,15 @@
     <ClInclude Include="include\io\filesystem.h" />
     <ClInclude Include="include\io\json.h" />
     <ClInclude Include="include\io\xml.h" />
-    <ClInclude Include="include\linked_list.h" />
     <ClInclude Include="include\memory\smart_ptr.h" />
     <ClInclude Include="include\net\http.h" />
     <ClInclude Include="include\net\tcp.h" />
     <ClInclude Include="include\net\udp.h" />
-    <ClInclude Include="include\queue.h" />
-    <ClInclude Include="include\searching.h" />
-    <ClInclude Include="include\sorting.h" />
-    <ClInclude Include="include\stack.h" />
     <ClInclude Include="include\util\config.h" />
     <ClInclude Include="include\util\error.h" />
     <ClInclude Include="include\util\result.h" />
     <ClInclude Include="include\util\thread_pool.h" />
     <ClInclude Include="include\util\time.h" />
-    <ClInclude Include="network_test\TcpClient.h" />
-    <ClInclude Include="network_test\TcpServer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

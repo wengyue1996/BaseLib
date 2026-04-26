@@ -46,102 +46,91 @@
 2. 编写使用示例
 3. 记录已知问题
 
-## 功能模块开发经验
+## 已完成的功能模块
 
-### 已完成的功能模块
+### 核心库 (include/, src/)
 
-#### 1. 智能指针 (smart_ptr)
-- **实现功能**：
-  - shared_ptr：引用计数、多所有权、线程安全
-  - unique_ptr：独占所有权、移动语义
-  - weak_ptr：弱引用、循环引用检测
-- **技术要点**：
-  - 使用std::atomic实现线程安全的引用计数
-  - 使用std::mutex保证线程安全
-  - 友元类实现weak_ptr对shared_ptr的访问
+#### 1. 智能指针 (memory/smart_ptr.h)
+- **功能**：shared_ptr, unique_ptr, weak_ptr
+- **标准**：C++11
+- **实现要点**：引用计数、线程安全、移动语义
 
-#### 2. JSON处理 (json)
-- **实现功能**：
-  - JSON解析（对象、数组、字符串、数字、布尔值、null）
-  - JSON序列化
-  - 嵌套结构处理
-- **技术要点**：
-  - 递归下降解析器
-  - 转义字符处理
-  - 内存管理（使用指针成员）
+#### 2. JSON处理 (io/json.h)
+- **功能**：JSON解析、序列化、嵌套结构处理
+- **实现要点**：递归下降解析器、转义字符处理
 
-#### 3. XML处理 (xml)
-- **实现功能**：
-  - XML解析和生成
-  - 节点和属性操作
-  - 嵌套结构处理
-- **技术要点**：
-  - DOM风格解析器
-  - XML实体编码/解码
-  - 缩进格式化输出
+#### 3. XML处理 (io/xml.h)
+- **功能**：XML解析、生成、节点和属性操作
+- **实现要点**：DOM风格解析、实体编码/解码
 
-#### 4. 文件系统 (filesystem)
-- **实现功能**：
-  - 文件和目录操作
-  - 文件读写
-  - 路径处理
-- **技术要点**：
-  - 跨平台API封装
-  - Windows/Linux条件编译
-  - 大文件支持
+#### 4. 文件系统 (io/filesystem.h)
+- **功能**：文件读写、目录操作、路径处理
+- **实现要点**：跨平台API封装、大文件支持
 
-#### 5. 网络模块 (tcp/udp)
-- **实现功能**：
-  - TCP客户端和服务器
-  - UDP套接字
-  - 跨平台socket封装
-- **技术要点**：
-  - Windows Winsock和Linux Berkeley Socket统一接口
-  - 错误处理和超时控制
-  - 连接状态管理
+#### 5. TCP网络 (net/tcp.h)
+- **功能**：TCP客户端/服务器、IPv6支持
+- **实现要点**：Winsock/Berkeley Socket统一接口、超时控制
 
-#### 6. 线程池 (thread_pool)
-- **实现功能**：
-  - 线程池管理
-  - 任务队列
-  - 任务调度
-- **技术要点**：
-  - std::thread、std::mutex、std::condition_variable使用
-  - std::future和std::packaged_task实现异步返回
-  - 线程安全队列
+#### 6. UDP网络 (net/udp.h)
+- **功能**：UDP套接字、多播支持
+- **实现要点**：跨平台socket封装
 
-#### 7. 时间工具 (time)
-- **实现功能**：
-  - 时间戳获取
-  - 时间格式化
-  - 定时器
-- **技术要点**：
-  - std::chrono时间库使用
-  - std::localtime和strftime格式化
-  - steady_clock用于计时
+#### 7. HTTP客户端 (net/http.h)
+- **功能**：HTTP GET/POST/PUT/DELETE、URL编解码
+- **实现要点**：原始socket实现、HTTP/1.1协议
 
-#### 8. 配置管理 (config)
-- **实现功能**：
-  - 配置加载和保存
-  - 键值对存储
-  - JSON格式转换
-- **技术要点**：
-  - pimpl模式隐藏实现
-  - 模板方法实现类型安全的get/set
+#### 8. 错误处理 (util/result.h)
+- **功能**：Result<T, E>类型、ErrorCode枚举
+- **标准**：C++11兼容（无C++20 std::expected依赖）
+- **实现要点**：C++2010兼容模式
+
+#### 9. 配置管理 (util/config.h)
+- **功能**：配置加载/保存、JSON格式转换
+- **实现要点**：pimpl模式、类型安全get/set
+
+#### 10. 线程池 (util/thread_pool.h)
+- **功能**：线程池管理、任务队列、异步任务
+- **实现要点**：std::future/std::packaged_task、线程安全队列
+
+#### 11. 时间工具 (util/time.h)
+- **功能**：时间戳、格式化、定时器
+- **实现要点**：std::chrono、steady_clock计时
+
+#### 12. 日志模块 (core/logger.h)
+- **功能**：多级别日志、文件输出、格式化
+- **实现要点**：流式API、线程安全
+
+## 项目结构
+
+```
+BaseLib/
+├── include/           # 头文件目录
+│   ├── base.h        # 主头文件
+│   ├── core/         # 核心模块
+│   ├── io/          # 输入输出
+│   ├── memory/       # 内存管理
+│   ├── net/         # 网络模块
+│   └── util/        # 工具模块
+├── src/              # 源代码
+├── tests/            # 单元测试
+├── scripts/          # 构建脚本
+├── BaseLib.vcxproj  # VS项目文件
+├── BaseLib.sln       # VS解决方案
+└── CMakeLists.txt    # CMake配置
+```
 
 ## 编码规范
 
 ### 命名规范
-- 类名：大写字母开头，如 `Json`、`XmlDocument`
-- 方法名：小写字母开头，如 `parse`、`toString`
-- 成员变量：m_前缀，如 `m_ptr`、`m_ref_count`
-- 常量：k前缀，如 `kMaxSize`
+- 类名：大写字母开头，如 `Json`、`TcpServer`
+- 方法名：小写字母开头，如 `parse`、`send`
+- 成员变量：m_前缀，如 `m_ptr`、`m_port`
+- 常量：k前缀，如 `kDefaultPort`
 
 ### 代码风格
 - 使用4空格缩进
 - 大括号单独一行
-- 命名空间缩进
-- 私有成员在前，公共成员在后
+- 命名空间不缩进
 
 ### 安全规范
 - 防止内存泄漏
@@ -149,17 +138,21 @@
 - 处理空指针
 - 线程安全保护
 
-## 跨平台开发
+## 构建系统
 
-### 平台差异处理
-- 使用条件编译 `#if defined(_WIN32) || defined(_WIN64)`
-- 抽象平台相关接口
-- 测试各平台兼容性
+### CMake
+```bash
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release --parallel
+```
 
-### 构建系统
-- 使用CMake管理跨平台构建
-- 分别配置静态库和动态库
-- 支持GCC、Clang、MSVC编译器
+### Visual Studio
+直接打开 BaseLib.sln 或 BaseLib.vcxproj
+
+### 打包脚本
+- `scripts/build-win32.bat` - Win32构建
+- `scripts/build-win64.bat` - x64构建
+- `scripts/build-package.ps1` - PowerShell打包脚本
 
 ## 问题排查
 
@@ -189,9 +182,3 @@
 2. 掌握性能分析工具
 3. 使用版本控制系统
 4. 使用持续集成工具
-
-### 代码质量
-1. 提高代码可读性
-2. 优化代码结构
-3. 加强测试覆盖
-4. 编写更好的文档

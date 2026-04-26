@@ -26,9 +26,6 @@ target_link_libraries(test_all PRIVATE BaseLib)
 add_executable(test_random tests/test_random.cpp)
 target_link_libraries(test_random PRIVATE BaseLib)
 
-add_executable(network_test network_test/network_test.cpp)
-target_link_libraries(network_test PRIVATE BaseLib)
-
 add_executable(test_result tests/test_result.cpp)
 target_link_libraries(test_result PRIVATE BaseLib)
 

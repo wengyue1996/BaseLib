@@ -1,5 +1,6 @@
 param(
     [string]$Configuration = "Release",
+    [string]$Platform = "x64",
     [switch]$Clean
 )
 
@@ -9,7 +10,7 @@ $Version = "1.0.0"
 $BuildDate = Get-Date -Format "yyyyMMdd"
 
 $ScriptDir = Split-Path $PSScriptRoot -Parent
-$BuildDir = Join-Path $ScriptDir "buildpkg"
+$BuildDir = Join-Path $ScriptDir "buildpkg-$Platform"
 $PackageDir = Join-Path $ScriptDir "package"
 
 function Write-Step($Message) {
@@ -70,7 +71,7 @@ if (-not (Test-Path $BuildDir)) {
 }
 
 Write-Host "Configuring CMake..." -NoNewline
-$cmakeOut = & cmake -S $ScriptDir -B $BuildDir -G "Visual Studio 17 2022" -A x64 2>&1
+$cmakeOut = & cmake -S $ScriptDir -B $BuildDir -G "Visual Studio 17 2022" -A $Platform 2>&1
 if ($LASTEXITCODE -ne 0) {
     WriteErr "CMake configuration failed"
     exit 1
@@ -87,7 +88,7 @@ WriteOK "Built"
 
 Write-Step "Creating Package"
 
-$packageName = "$ProjectName-$Version-$BuildDate-$Configuration"
+$packageName = "$ProjectName-$Version-$Platform-$Configuration"
 $pkgFolder = Join-Path $PackageDir $packageName
 $zipPath = Join-Path $PackageDir "$packageName.zip"
 
