@@ -133,64 +133,9 @@ WriteOK "Headers copied"
 
 Write-Host "Copying documentation..." -NoNewline
 $apiDocSrc = Join-Path $ScriptDir "archive\api-documentation\BaseLib-API-Documentation.md"
-$apiDocDest = Join-Path $pkgFolder "docs\BaseLib-API-Documentation.html"
+$apiDocDest = Join-Path $pkgFolder "docs\BaseLib-API-Documentation.md"
 if (Test-Path $apiDocSrc) {
-    $mdContent = Get-Content $apiDocSrc -Raw -Encoding UTF8
-    $htmlHeader = "<!DOCTYPE html>`n<html>`n<head>`n<meta charset=""UTF-8"">`n<title>$ProjectName API Documentation</title>`n"
-    $htmlHeader += "<style>`nbody{font-family:'Segoe UI',sans-serif;max-width:900px;margin:0 auto;padding:20px;}`n"
-    $htmlHeader += "h1{color:#333;border-bottom:2px solid #007acc;padding-bottom:10px;}`n"
-    $htmlHeader += "h2{color:#007acc;margin-top:30px;}`ncode{background:#f4f4f4;padding:2px 6px;}`n"
-    $htmlHeader += "pre{background:#f4f4f4;padding:15px;border-radius:5px;overflow-x:auto;}`n"
-    $htmlHeader += "table{border-collapse:collapse;width:100%;margin:20px 0;}`n"
-    $htmlHeader += "th,td{border:1px solid #ddd;padding:8px;text-align:left;}`n"
-    $htmlHeader += "th{background:#007acc;color:white;}`n"
-    $htmlHeader += "</style>`n</head>`n<body>`n"
-    $htmlFooter = "`n</body>`n</html>"
-    $htmlBody = $mdContent
-    $htmlBody = $htmlBody -replace '&', '&amp;'
-    $htmlBody = $htmlBody -replace '<', '&lt;'
-    $htmlBody = $htmlBody -replace '>', '&gt;'
-    $htmlBody = $htmlBody -replace '(?m)^# (.+)$', "<h1>`$1</h1>"
-    $htmlBody = $htmlBody -replace '(?m)^## (.+)$', "<h2>`$1</h2>"
-    $htmlBody = $htmlBody -replace '(?m)^### (.+)$', "<h3>`$1</h3>"
-    $htmlBody = $htmlBody -replace '(?m)^#### (.+)$', "<h4>`$1</h4>"
-    $htmlBody = $htmlBody -replace '(?m)^```(\w*)$', ''
-    $htmlBody = $htmlBody -replace '(?m)^`([^`]+)`$', "<code>`$1</code>"
-    $htmlBody = $htmlBody -replace '(?m)^- (.+)$', "<li>`$1</li>"
-    $htmlBody = $htmlBody -replace '(?m)^(\d+)\. (.+)$', "<li>`$2</li>"
-    $htmlBody = $htmlBody -replace '(?m)^---$', '<hr>'
-    $htmlBody = $htmlBody -replace '(?m)^!\[(.+)\]\((.+)\)$', "<img alt=""`$1"" src=""`$2"">"
-    $htmlBody = $htmlBody -replace '(?m)^\[(.+)\]\((.+)\)$', "<a href=""`$2"">`$1</a>"
-    $htmlBody = $htmlBody -replace '(?m)^\*\*(.+)\*\*$', '<strong>`$1</strong>'
-    $htmlBody = $htmlBody -replace '(?m)^\*(.+)\*$', '<em>`$1</em>'
-    $lines = $htmlBody -split "`n"
-    $newBody = @()
-    $inTable = $false
-    foreach ($line in $lines) {
-        if ($line -match '^\|.+\|$') {
-            if (-not $inTable) {
-                $inTable = $true
-                $newBody += '<table>'
-            }
-            if ($line -notmatch '^\|[-| :]+\|$') {
-                $cells = ($line -split '\|' | Where-Object { $_.Trim() -ne '' })
-                $row = $cells | ForEach-Object { "<td>" + $_.Trim() + "</td>" }
-                $newBody += "<tr>" + ($row -join '') + "</tr>"
-            }
-        } else {
-            if ($inTable) {
-                $newBody += '</table>'
-                $inTable = $false
-            }
-            $newBody += $line
-        }
-    }
-    if ($inTable) {
-        $newBody += '</table>'
-    }
-    $htmlBody = $newBody -join "`n"
-    $htmlContent = $htmlHeader + $htmlBody + $htmlFooter
-    [System.IO.File]::WriteAllText($apiDocDest, $htmlContent, [System.Text.Encoding]::UTF8)
+    Copy-Item $apiDocSrc $apiDocDest -Force
     WriteOK "Documentation copied"
 } else {
     Write-Host "Documentation not found, skipping" -ForegroundColor Yellow
