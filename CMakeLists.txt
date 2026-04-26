@@ -15,6 +15,7 @@ set(SOURCE_FILES
     src/net/http.cpp
     src/net/http_server.cpp
     src/net/http_client.cpp
+    src/net/network_engine.cpp
     src/core/logger.cpp
     src/util/config.cpp
     src/util/error.cpp
@@ -46,6 +47,9 @@ target_link_libraries(test_http_server PRIVATE BaseLib)
 
 add_executable(test_http_client tests/test_http_client.cpp)
 target_link_libraries(test_http_client PRIVATE BaseLib)
+
+add_executable(test_network_engine tests/test_network_engine.cpp)
+target_link_libraries(test_network_engine PRIVATE BaseLib)
 
 add_executable(test_thread tests/test_thread.cpp)
 target_link_libraries(test_thread PRIVATE BaseLib)
