@@ -53,6 +53,8 @@
 - [x] 线程池 - 并行任务执行
 - [x] 线程管理 - 生命周期管理
 - [x] 锁抽象框架 - 递归锁/非递归锁/读写锁
+- [x] HTTP服务端抽象 - include/net/http_server.h
+- [x] HTTP客户端抽象 - include/net/http_client.h
 
 #### v1.1.0 - 规划中
 - [ ] 性能优化 - 日志异步写入、JSON解析优化
@@ -70,6 +72,8 @@
 | C++2010兼容Result<T,E> | ✅ | include/util/result.h | 2026-04 |
 | IPv6网络支持 | ✅ | include/net/tcp.h, udp.h | 2026-04 |
 | HTTP客户端库 | ✅ | include/net/http.h | 2026-04 |
+| HTTP服务端抽象 | ✅ | include/net/http_server.h | 2026-04 |
+| HTTP客户端抽象 | ✅ | include/net/http_client.h | 2026-04 |
 | CI/CD自动化构建 | ✅ | .github/workflows/ci.yml | 2026-04 |
 | 单元测试基础设施 | ✅ | tests/目录 (12个测试) | 2026-04 |
 | 锁抽象框架 | ✅ | include/util/lock.h | 2026-04 |

@@ -128,6 +128,25 @@
 - **实现要点**：线程安全、日志轮转、上下文信息(时间戳/模块名/文件名/行号/函数名)
 - **测试**：test_logger.cpp
 
+#### 15. HTTP服务端抽象 (net/http_server.h)
+- **功能**：请求路由注册、请求处理、响应发送、错误处理、基础配置管理
+- **接口**：IHttpServer抽象类、HttpServer实现类
+- **路由**：GET/POST/PUT/DELETE/PATCH/OPTIONS/HEAD/ANY方法
+- **中间件**：灵活的中间件机制，支持请求预处理和后处理
+- **配置**：端口、超时时间、最大连接数等ServerConfig
+- **跨平台**：Windows (Winsock2) / Linux (Berkeley Socket)
+- **实现要点**：Windows宏冲突解决(PATCH/OPTIONS/DELETE)、RAII资源管理
+- **测试**：test_http_server.cpp (9个测试用例)
+
+#### 16. HTTP客户端抽象 (net/http_client.h)
+- **功能**：统一请求方法封装、请求/响应拦截器、错误处理标准化、超时控制、请求取消
+- **接口**：IHttpClient抽象类、HttpClient实现类、MockHttpClient测试用类
+- **请求/响应**：IHttpRequest/HttpRequest、IHttpResponse/HttpResponse
+- **拦截器**：IInterceptor接口，支持onRequest/onResponse/onError
+- **配置**：RequestConfig超时/重定向/代理/SSL/重试等
+- **取消机制**：CancellationToken原子操作
+- **测试**：test_http_client.cpp (17个测试用例)
+
 ## 项目结构
 
 ```
@@ -145,7 +164,9 @@ BaseLib/
 │   ├── net/         # 网络模块
 │   │   ├── tcp.h
 │   │   ├── udp.h
-│   │   └── http.h
+│   │   ├── http.h
+│   │   ├── http_server.h
+│   │   └── http_client.h
 │   └── util/        # 工具模块
 │       ├── config.h
 │       ├── error.h

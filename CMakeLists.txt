@@ -13,6 +13,8 @@ set(SOURCE_FILES
     src/net/tcp.cpp
     src/net/udp.cpp
     src/net/http.cpp
+    src/net/http_server.cpp
+    src/net/http_client.cpp
     src/core/logger.cpp
     src/util/config.cpp
     src/util/error.cpp
@@ -38,6 +40,12 @@ target_link_libraries(test_result PRIVATE BaseLib)
 
 add_executable(test_http tests/test_http.cpp)
 target_link_libraries(test_http PRIVATE BaseLib)
+
+add_executable(test_http_server tests/test_http_server.cpp)
+target_link_libraries(test_http_server PRIVATE BaseLib)
+
+add_executable(test_http_client tests/test_http_client.cpp)
+target_link_libraries(test_http_client PRIVATE BaseLib)
 
 add_executable(test_thread tests/test_thread.cpp)
 target_link_libraries(test_thread PRIVATE BaseLib)

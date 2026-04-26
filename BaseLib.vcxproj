@@ -156,6 +156,7 @@
     <ClCompile Include="src\io\json.cpp" />
     <ClCompile Include="src\io\xml.cpp" />
     <ClCompile Include="src\net\http.cpp" />
+    <ClCompile Include="src\net\http_server.cpp" />
     <ClCompile Include="src\net\tcp.cpp" />
     <ClCompile Include="src\net\udp.cpp" />
     <ClCompile Include="src\util\config.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="src\util\time.cpp" />
     <ClCompile Include="tests\test_all.cpp" />
     <ClCompile Include="tests\test_http.cpp" />
+    <ClCompile Include="tests\test_http_server.cpp" />
     <ClCompile Include="tests\test_io.cpp" />
     <ClCompile Include="tests\test_lock.cpp" />
     <ClCompile Include="tests\test_logger.cpp" />
@@ -185,6 +187,7 @@
     <ClInclude Include="include\io\xml.h" />
     <ClInclude Include="include\memory\smart_ptr.h" />
     <ClInclude Include="include\net\http.h" />
+    <ClInclude Include="include\net\http_server.h" />
     <ClInclude Include="include\net\tcp.h" />
     <ClInclude Include="include\net\udp.h" />
     <ClInclude Include="include\util\config.h" />

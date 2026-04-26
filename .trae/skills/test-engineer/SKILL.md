@@ -83,6 +83,8 @@
 | test_all.cpp | 汇总测试 | ✅ 通过 | test_all.exe |
 | test_result.cpp | Result<T,E>类型测试 | ✅ 通过 | test_result.exe |
 | test_http.cpp | HTTP客户端测试 | ✅ 通过 | test_http.exe |
+| test_http_server.cpp | HTTP服务端测试 (9用例) | ✅ 通过 | test_http_server.exe |
+| test_http_client.cpp | HTTP客户端测试 (17用例) | ✅ 通过 | test_http_client.exe |
 | test_logger.cpp | 日志模块测试 | ✅ 通过 | test_logger.exe |
 | test_io.cpp | JSON/XML/文件系统测试 | ✅ 通过 | test_io.exe |
 | test_net.cpp | TCP/UDP网络测试 | ✅ 通过 | test_net.exe |
