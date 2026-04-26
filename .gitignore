@@ -1,0 +1,45 @@
+# Build outputs
+build/
+buildpkg/
+package/
+
+# Visual Studio
+*.user
+*.suo
+*.opensdf
+*.sdf
+*.vcxproj.user
+*.vcxproj.filters
+
+# CMake
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+CMakeFiles/
+
+# Compiled files
+*.o
+*.obj
+*.lib
+*.dll
+*.exe
+*.pdb
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Archive (can be regenerated)
+archive/
+
+# Package outputs (can be regenerated)
+*.zip
