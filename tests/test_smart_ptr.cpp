@@ -1,126 +1,222 @@
 #include "../include/memory/smart_ptr.h"
 #include <iostream>
+#include <atomic>
 #include <cassert>
 #include <thread>
 #include <vector>
 
 using namespace base::memory;
 
-void testSharedPtr() {
-    std::cout << "Testing shared_ptr..." << std::endl;
+static std::atomic<int> g_destructor_count(0);
 
+class TestObject {
+public:
+    TestObject() : m_value(0) {}
+    explicit TestObject(int v) : m_value(v) {}
+    ~TestObject() { g_destructor_count++; }
+    int getValue() const { return m_value; }
+    void setValue(int v) { m_value = v; }
+private:
+    int m_value;
+};
+
+void test_shared_ptr_basic() {
+    std::cout << "Test shared_ptr basic..." << std::endl;
+    g_destructor_count = 0;
     {
-        shared_ptr<int> sp1(new int(10));
-        assert(*sp1 == 10);
-        assert(sp1.use_count() == 1);
+        shared_ptr<TestObject> p1(new TestObject(42));
+        assert(p1);
+        assert(p1->getValue() == 42);
+        assert(p1.use_count() == 1);
+        assert(p1.unique());
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
 
+void test_shared_ptr_copy() {
+    std::cout << "Test shared_ptr copy..." << std::endl;
+    g_destructor_count = 0;
+    {
+        shared_ptr<TestObject> p1(new TestObject(42));
+        shared_ptr<TestObject> p2 = p1;
+        assert(p1.use_count() == 2);
+        assert(p2.use_count() == 2);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_shared_ptr_move() {
+    std::cout << "Test shared_ptr move..." << std::endl;
+    g_destructor_count = 0;
+    {
+        shared_ptr<TestObject> p1(new TestObject(100));
+        shared_ptr<TestObject> p2 = std::move(p1);
+        assert(!p1);
+        assert(p2);
+        assert(p2->getValue() == 100);
+        assert(p2.use_count() == 1);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_shared_ptr_reset() {
+    std::cout << "Test shared_ptr reset..." << std::endl;
+    g_destructor_count = 0;
+    {
+        shared_ptr<TestObject> p1(new TestObject(50));
+        p1 = shared_ptr<TestObject>(new TestObject(60));
+        assert(p1->getValue() == 60);
+        assert(p1.use_count() == 1);
+        assert(g_destructor_count == 1);
+        p1.reset();
+        assert(!p1);
+        assert(g_destructor_count == 2);
+    }
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_shared_ptr_swap() {
+    std::cout << "Test shared_ptr swap..." << std::endl;
+    g_destructor_count = 0;
+    {
+        shared_ptr<TestObject> p1(new TestObject(10));
+        shared_ptr<TestObject> p2(new TestObject(20));
+        p1.swap(p2);
+        assert(p1->getValue() == 20);
+        assert(p2->getValue() == 10);
+    }
+    assert(g_destructor_count == 2);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_make_shared() {
+    std::cout << "Test make_shared..." << std::endl;
+    g_destructor_count = 0;
+    {
+        auto p1 = make_shared<TestObject>(123);
+        assert(p1);
+        assert(p1->getValue() == 123);
+        auto p2 = p1;
+        assert(p1.use_count() == 2);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_unique_ptr_basic() {
+    std::cout << "Test unique_ptr basic..." << std::endl;
+    g_destructor_count = 0;
+    {
+        unique_ptr<TestObject> p1(new TestObject(77));
+        assert(p1);
+        assert((*p1).getValue() == 77);
+        unique_ptr<TestObject> p2 = std::move(p1);
+        assert(!p1);
+        assert(p2);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_make_unique() {
+    std::cout << "Test make_unique..." << std::endl;
+    g_destructor_count = 0;
+    {
+        auto p1 = make_unique<TestObject>(999);
+        assert(p1);
+        assert(p1->getValue() == 999);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_weak_ptr_basic() {
+    std::cout << "Test weak_ptr basic..." << std::endl;
+    g_destructor_count = 0;
+    {
+        shared_ptr<TestObject> sp(new TestObject(111));
+        weak_ptr<TestObject> wp = sp;
+        assert(!wp.expired());
+        assert(wp.use_count() == 1);
+        shared_ptr<TestObject> sp2 = wp.lock();
+        assert(sp2);
+        assert(sp2->getValue() == 111);
+    }
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_weak_ptr_expired() {
+    std::cout << "Test weak_ptr expired..." << std::endl;
+    g_destructor_count = 0;
+    {
+        weak_ptr<TestObject> wp;
+        assert(wp.expired());
         {
-            shared_ptr<int> sp2 = sp1;
-            assert(*sp2 == 10);
-            assert(sp1.use_count() == 2);
-            assert(sp2.use_count() == 2);
+            shared_ptr<TestObject> sp(new TestObject(222));
+            wp = sp;
+            assert(!wp.expired());
         }
-
-        assert(sp1.use_count() == 1);
+        assert(wp.expired());
+        shared_ptr<TestObject> sp = wp.lock();
+        assert(!sp);
     }
-
-    {
-        shared_ptr<int> sp1(new int(20));
-        shared_ptr<int> sp2 = sp1;
-        shared_ptr<int> sp3;
-        sp3 = sp2;
-        assert(*sp3 == 20);
-        assert(sp3.use_count() == 3);
-    }
-
-    std::cout << "shared_ptr tests passed!" << std::endl;
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS]" << std::endl;
 }
 
-void testUniquePtr() {
-    std::cout << "Testing unique_ptr..." << std::endl;
-
-    {
-        unique_ptr<int> up1(new int(100));
-        assert(*up1 == 100);
-
-        unique_ptr<int> up2 = std::move(up1);
-        assert(up1.get() == nullptr);
-        assert(*up2 == 100);
-
-        up2.reset(new int(200));
-        assert(*up2 == 200);
-
-        unique_ptr<int> up3 = std::move(up2);
-        assert(up3.get() != nullptr);
-    }
-
-    std::cout << "unique_ptr tests passed!" << std::endl;
-}
-
-void testWeakPtr() {
-    std::cout << "Testing weak_ptr..." << std::endl;
-
-    {
-        shared_ptr<int> sp1(new int(300));
-        weak_ptr<int> wp1 = sp1;
-
-        assert(!wp1.expired());
-        assert(wp1.use_count() == 1);
-
-        shared_ptr<int> sp2 = wp1.lock();
-        assert(*sp2 == 300);
-        assert(sp1.use_count() == 2);
-
-        sp1.reset();
-        sp2.reset();
-
-        assert(wp1.expired());
-    }
-
-    {
-        shared_ptr<int> sp1(new int(400));
-        weak_ptr<int> wp1 = sp1;
-
-        sp1.reset();
-
-        shared_ptr<int> sp2 = wp1.lock();
-        assert(sp2.get() == nullptr);
-    }
-
-    std::cout << "weak_ptr tests passed!" << std::endl;
-}
-
-void testThreadSafety() {
-    std::cout << "Testing thread safety..." << std::endl;
-
-    shared_ptr<int> sp(new int(0));
+void test_multithread() {
+    std::cout << "Test multithread..." << std::endl;
+    g_destructor_count = 0;
+    shared_ptr<TestObject> sp(new TestObject(0));
+    const int num_threads = 4;
+    const int iterations = 1000;
 
     std::vector<std::thread> threads;
-    for (int i = 0; i < 10; ++i) {
-        threads.emplace_back([&sp]() {
-            for (int j = 0; j < 100; ++j) {
-                shared_ptr<int> sp2 = sp;
-                int value = *sp2;
-                (void)value;
+    for (int t = 0; t < num_threads; ++t) {
+        threads.emplace_back([&sp, iterations]() {
+            for (int i = 0; i < iterations; ++i) {
+                shared_ptr<TestObject> local = sp;
+                local->setValue(local->getValue() + 1);
             }
         });
     }
 
-    for (auto& t : threads) {
-        t.join();
+    for (auto& th : threads) {
+        th.join();
     }
 
-    std::cout << "Thread safety tests passed!" << std::endl;
+    assert(sp->getValue() == num_threads * iterations);
+    sp.reset();
+    assert(g_destructor_count == 1);
+    std::cout << "  [PASS] (counter=" << num_threads * iterations << ")" << std::endl;
 }
 
 int main() {
-    std::cout << "=== Smart Pointer Tests ===" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "      Smart Pointer Unit Tests           " << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << std::endl;
 
-    testSharedPtr();
-    testUniquePtr();
-    testWeakPtr();
-    testThreadSafety();
+    test_shared_ptr_basic();
+    test_shared_ptr_copy();
+    test_shared_ptr_move();
+    test_shared_ptr_reset();
+    test_shared_ptr_swap();
+    test_make_shared();
+    test_unique_ptr_basic();
+    test_make_unique();
+    test_weak_ptr_basic();
+    test_weak_ptr_expired();
+    test_multithread();
 
-    std::cout << "\nAll smart pointer tests passed!" << std::endl;
+    std::cout << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "  All Smart Pointer Tests Passed! (11)  " << std::endl;
+    std::cout << "========================================" << std::endl;
+
     return 0;
 }

@@ -17,6 +17,12 @@
 
 ## 测试流程
 
+### 完整工作流程
+```
+接收任务 → 需求分析 → 测试设计 → 测试执行 → 结果记录 → 缺陷跟踪 → 测试报告
+    ↑_____________________________________________________________________|
+```
+
 ### 1. 测试计划
 1. 分析需求文档
 2. 确定测试范围和目标
@@ -59,7 +65,7 @@
 - 识别性能瓶颈
 
 ### 边界条件测试
-- 测试最大值、最小值
+- 测试最大值，最小值
 - 测试临界值
 - 测试数据类型边界
 
@@ -70,20 +76,22 @@
 
 ## 已完成的测试
 
-### 测试文件 (tests/)
+### 测试文件 (tests/) - 12个
 
-| 测试文件 | 测试内容 | 状态 |
-|---------|---------|------|
-| test_result.cpp | Result<T,E>类型测试 | ✅ 通过 |
-| test_http.cpp | HTTP客户端测试 | ✅ 通过 |
-| test_logger.cpp | 日志模块测试 | ✅ 通过 |
-| test_io.cpp | JSON/XML/文件系统测试 | ✅ 通过 |
-| test_net.cpp | TCP/UDP网络测试 | ✅ 通过 |
-| test_smart_ptr.cpp | 智能指针测试 | ✅ 通过 |
-| test_util.cpp | 工具模块测试 | ✅ 通过 |
-| test_random.cpp | 随机数测试 | ✅ 通过 |
-| test_main.cpp | 测试入口 | ✅ 通过 |
-| test_all.cpp | 汇总测试 | ✅ 通过 |
+| 测试文件 | 测试内容 | 状态 | 运行命令 |
+|---------|---------|------|---------|
+| test_all.cpp | 汇总测试 | ✅ 通过 | test_all.exe |
+| test_result.cpp | Result<T,E>类型测试 | ✅ 通过 | test_result.exe |
+| test_http.cpp | HTTP客户端测试 | ✅ 通过 | test_http.exe |
+| test_logger.cpp | 日志模块测试 | ✅ 通过 | test_logger.exe |
+| test_io.cpp | JSON/XML/文件系统测试 | ✅ 通过 | test_io.exe |
+| test_net.cpp | TCP/UDP网络测试 | ✅ 通过 | test_net.exe |
+| test_smart_ptr.cpp | 智能指针测试 | ✅ 通过 | test_smart_ptr.exe |
+| test_util.cpp | Config/ThreadPool/Time测试 | ✅ 通过 | test_util.exe |
+| test_thread.cpp | 线程管理测试 (11用例) | ✅ 通过 | test_thread.exe |
+| test_lock.cpp | 锁抽象框架测试 (7用例) | ✅ 通过 | test_lock.exe |
+| test_random.cpp | 随机数测试 | ✅ 通过 | test_random.exe |
+| test_main.cpp | 测试入口 | ✅ 通过 | - |
 
 ## 测试用例设计规范
 
@@ -156,6 +164,28 @@ scripts\build-win64.bat
 -Platform   Win32 或 x64
 ```
 
+## 运行测试
+
+### CMake 构建
+```bash
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release --parallel
+```
+
+### 运行单个测试
+```bash
+build/Release/test_all.exe     # 所有测试
+build/Release/test_logger.exe  # 日志测试
+build/Release/test_lock.exe   # 锁测试
+build/Release/test_thread.exe  # 线程测试
+build/Release/test_result.exe # Result测试
+build/Release/test_http.exe   # HTTP测试
+```
+
+### 验证标准
+- 每个测试必须显示 "[PASS]"
+- 所有测试完成后显示 "All Tests Passed!"
+
 ## 跨平台测试
 
 ### 测试策略
@@ -166,14 +196,14 @@ scripts\build-win64.bat
 
 ### 目标平台
 - **Windows x64**：主要测试平台，已验证 ✅
-- **Windows Win32**：待测试
-- **Linux x64**：CI自动测试
-- **macOS**：CI自动测试
+- **Windows Win32**：✅ 打包脚本就绪
+- **Linux x64**：CI自动测试 ✅
+- **macOS**：CI自动测试 ✅
 
 ## 质量评估标准
 
 ### 代码覆盖率
-- 目标：核心模块覆盖率60%以上
+- 目标：核心模块覆盖率80%以上
 
 ### 缺陷修复率
 - 目标：严重缺陷100%修复，高优先级缺陷90%修复
@@ -208,20 +238,23 @@ scripts\build-win64.bat
 ## 待测试模块
 
 ### 高优先级
+- [x] 线程管理模块 - test_thread.cpp
+- [x] 锁抽象框架 - test_lock.cpp
+- [x] 日志模块 - test_logger.cpp
 - [ ] TCP服务器多客户端连接
 - [ ] UDP多播功能
-- [ ] HTTP长连接
-- [ ] 线程池并发任务
 
 ### 中优先级
+- [ ] HTTP长连接
+- [ ] 线程池并发任务
 - [ ] 配置文件加载
 - [ ] 日志轮转
-- [ ] IPv6网络
 
 ### 低优先级
 - [ ] 性能基准测试
 - [ ] 内存泄漏检测
 - [ ] 并发压力测试
+- [ ] IPv6网络
 
 ## 技能提升方向
 

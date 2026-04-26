@@ -5,8 +5,8 @@
 #include <vector>
 #include <functional>
 #include <atomic>
-#include <mutex>
 #include <map>
+#include "../util/lock.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
@@ -114,7 +114,7 @@ private:
     SocketType m_server_socket;
     bool m_running;
     std::atomic<int> m_client_counter;
-    mutable std::mutex m_clients_mutex;
+    mutable base::util::RecursiveMutex m_clients_mutex;
     std::map<int, SocketType> m_clients;
     std::map<int, std::string> m_client_ips;
 

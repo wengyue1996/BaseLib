@@ -51,54 +51,82 @@
 ### 核心库 (include/, src/)
 
 #### 1. 智能指针 (memory/smart_ptr.h)
-- **功能**：shared_ptr, unique_ptr, weak_ptr
-- **标准**：C++11
-- **实现要点**：引用计数、线程安全、移动语义
+- **功能**：shared_ptr, unique_ptr, weak_ptr, make_shared, make_unique
+- **标准**：C++11，完全重新实现
+- **实现要点**：ControlBlock虚函数表设计、引用计数原子操作、RAII原则
+- **特性**：线程安全引用计数、移动语义支持、weak_ptr expired检测
+- **测试**：test_smart_ptr.cpp (11个测试用例)
 
 #### 2. JSON处理 (io/json.h)
 - **功能**：JSON解析、序列化、嵌套结构处理
 - **实现要点**：递归下降解析器、转义字符处理
+- **测试**：test_io.cpp
 
 #### 3. XML处理 (io/xml.h)
 - **功能**：XML解析、生成、节点和属性操作
 - **实现要点**：DOM风格解析、实体编码/解码
+- **测试**：test_io.cpp
 
 #### 4. 文件系统 (io/filesystem.h)
 - **功能**：文件读写、目录操作、路径处理
 - **实现要点**：跨平台API封装、大文件支持
+- **测试**：test_io.cpp
 
 #### 5. TCP网络 (net/tcp.h)
 - **功能**：TCP客户端/服务器、IPv6支持
 - **实现要点**：Winsock/Berkeley Socket统一接口、超时控制
+- **测试**：test_net.cpp
+- **日志**：使用BASE_LOG_*宏
 
 #### 6. UDP网络 (net/udp.h)
 - **功能**：UDP套接字、多播支持
 - **实现要点**：跨平台socket封装
+- **测试**：test_net.cpp
 
 #### 7. HTTP客户端 (net/http.h)
 - **功能**：HTTP GET/POST/PUT/DELETE、URL编解码
 - **实现要点**：原始socket实现、HTTP/1.1协议
+- **测试**：test_http.cpp
 
 #### 8. 错误处理 (util/result.h)
 - **功能**：Result<T, E>类型、ErrorCode枚举
 - **标准**：C++11兼容（无C++20 std::expected依赖）
 - **实现要点**：C++2010兼容模式
+- **测试**：test_result.cpp
 
 #### 9. 配置管理 (util/config.h)
 - **功能**：配置加载/保存、JSON格式转换
-- **实现要点**：pimpl模式、类型安全get/set
+- **实现要点**：类型安全get/set模板
+- **测试**：test_util.cpp
 
 #### 10. 线程池 (util/thread_pool.h)
 - **功能**：线程池管理、任务队列、异步任务
 - **实现要点**：std::future/std::packaged_task、线程安全队列
+- **测试**：test_util.cpp
 
-#### 11. 时间工具 (util/time.h)
+#### 11. 线程管理 (util/thread.h)
+- **功能**：线程创建/启动/停止/暂停/恢复/等待、优先级设置、状态监控
+- **跨平台**：Windows/Linux/macOS
+- **实现要点**：原生线程封装、RAII资源管理、Result<T,E>错误处理
+- **测试**：test_thread.cpp
+
+#### 12. 锁抽象框架 (util/lock.h)
+- **功能**：统一锁接口、递归锁、非递归锁、读写锁、锁守卫
+- **接口**：ILock抽象类、RecursiveMutex、NonRecursiveMutex、ReadWriteLock
+- **实现要点**：跨平台线程ID处理、RAII LockGuard/TryLockGuard
+- **测试**：test_lock.cpp
+
+#### 13. 时间工具 (util/time.h)
 - **功能**：时间戳、格式化、定时器
 - **实现要点**：std::chrono、steady_clock计时
+- **测试**：test_util.cpp
 
-#### 12. 日志模块 (core/logger.h)
-- **功能**：多级别日志、文件输出、格式化
-- **实现要点**：流式API、线程安全
+#### 14. 日志模块 (core/logger.h)
+- **功能**：多级别日志(DEBUG/INFO/WARN/ERROR/FATAL)、文件输出、格式化
+- **配置**：LoggerConfig初始化、内部日志开关控制
+- **宏**：BASE_LOG_DEBUG、BASE_LOG_INFO、BASE_LOG_WARN、BASE_LOG_ERROR、BASE_LOG_FATAL
+- **实现要点**：线程安全、日志轮转、上下文信息(时间戳/模块名/文件名/行号/函数名)
+- **测试**：test_logger.cpp
 
 ## 项目结构
 
@@ -107,13 +135,30 @@ BaseLib/
 ├── include/           # 头文件目录
 │   ├── base.h        # 主头文件
 │   ├── core/         # 核心模块
+│   │   └── logger.h  # 日志模块
 │   ├── io/          # 输入输出
+│   │   ├── json.h
+│   │   ├── xml.h
+│   │   └── filesystem.h
 │   ├── memory/       # 内存管理
+│   │   └── smart_ptr.h
 │   ├── net/         # 网络模块
+│   │   ├── tcp.h
+│   │   ├── udp.h
+│   │   └── http.h
 │   └── util/        # 工具模块
+│       ├── config.h
+│       ├── error.h
+│       ├── lock.h
+│       ├── result.h
+│       ├── thread.h
+│       ├── thread_pool.h
+│       └── time.h
 ├── src/              # 源代码
-├── tests/            # 单元测试
+├── tests/            # 单元测试 (12个)
 ├── scripts/          # 构建脚本
+├── archive/          # 文档存档
+├── .trae/skills/     # SKILL文档
 ├── BaseLib.vcxproj  # VS项目文件
 ├── BaseLib.sln       # VS解决方案
 └── CMakeLists.txt    # CMake配置
@@ -138,6 +183,11 @@ BaseLib/
 - 处理空指针
 - 线程安全保护
 
+### 日志规范
+- 使用BASE_LOG_*宏记录日志
+- 模块名称使用有意义的标识符
+- 错误和致命错误使用BASE_LOG_ERROR/BASE_LOG_FATAL
+
 ## 构建系统
 
 ### CMake
@@ -153,6 +203,15 @@ cmake --build build --config Release --parallel
 - `scripts/build-win32.bat` - Win32构建
 - `scripts/build-win64.bat` - x64构建
 - `scripts/build-package.ps1` - PowerShell打包脚本
+
+### 运行测试
+```bash
+build/Release/test_all.exe     # 所有测试
+build/Release/test_logger.exe  # 日志测试
+build/Release/test_lock.exe    # 锁测试
+build/Release/test_thread.exe  # 线程测试
+build/Release/test_result.exe  # Result测试
+```
 
 ## 问题排查
 

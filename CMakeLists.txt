@@ -13,7 +13,11 @@ set(SOURCE_FILES
     src/net/tcp.cpp
     src/net/udp.cpp
     src/net/http.cpp
+    src/core/logger.cpp
     src/util/config.cpp
+    src/util/error.cpp
+    src/util/lock.cpp
+    src/util/thread.cpp
     src/util/thread_pool.cpp
     src/util/time.cpp
 )
@@ -23,6 +27,9 @@ add_library(BaseLib STATIC ${SOURCE_FILES})
 add_executable(test_all tests/test_all.cpp)
 target_link_libraries(test_all PRIVATE BaseLib)
 
+add_executable(test_smart_ptr tests/test_smart_ptr.cpp)
+target_link_libraries(test_smart_ptr PRIVATE BaseLib)
+
 add_executable(test_random tests/test_random.cpp)
 target_link_libraries(test_random PRIVATE BaseLib)
 
@@ -31,6 +38,18 @@ target_link_libraries(test_result PRIVATE BaseLib)
 
 add_executable(test_http tests/test_http.cpp)
 target_link_libraries(test_http PRIVATE BaseLib)
+
+add_executable(test_thread tests/test_thread.cpp)
+target_link_libraries(test_thread PRIVATE BaseLib)
+
+add_executable(test_util tests/test_util.cpp)
+target_link_libraries(test_util PRIVATE BaseLib)
+
+add_executable(test_logger tests/test_logger.cpp)
+target_link_libraries(test_logger PRIVATE BaseLib)
+
+add_executable(test_lock tests/test_lock.cpp)
+target_link_libraries(test_lock PRIVATE BaseLib)
 
 set_target_properties(BaseLib PROPERTIES
     VERSION 1.0.0

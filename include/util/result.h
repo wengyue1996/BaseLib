@@ -39,7 +39,12 @@ public:
         XML_PARSE_ERROR = 5001,
         XML_INVALID_FORMAT = 5002,
 
-        UNKNOWN_ERROR = 9999
+        UNKNOWN_ERROR = 9999,
+
+        THREAD_ERROR = 6001,
+        THREAD_CREATE_FAILED = 6002,
+        THREAD_JOIN_FAILED = 6003,
+        DEADLOCK = 6004
     };
 
     ErrorCode() : m_code(SUCCESS), m_message("") {}

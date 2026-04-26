@@ -34,12 +34,17 @@ void test_smart_ptr_random() {
         assert(sp2.use_count() == 3);
         assert(*sp1 == *sp2);
 
-        sp3.reset(new int(dis(gen)));
+        shared_ptr<int> sp3_new(new int(dis(gen)));
+        sp3 = sp3_new;
         assert(sp1.use_count() == 2);
 
         shared_ptr<int> sp4(std::move(sp1));
         assert(sp2.use_count() == 2);
         assert(sp1.get() == nullptr);
+
+        shared_ptr<int> sp5(new int(dis(gen)));
+        sp5.reset();
+        assert(!sp5);
         std::cout << "  PASSED" << std::endl;
     }
 

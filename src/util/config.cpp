@@ -3,12 +3,8 @@
 namespace base {
 namespace util {
 
-class Config::Impl {
-public:
-    std::map<std::string, std::string> data;
-};
-
-Config::Config() : m_impl(new Impl()) {}
+Config::Config() = default;
+Config::~Config() = default;
 
 Config Config::load(const std::string& filePath) {
     (void)filePath;
@@ -25,23 +21,11 @@ std::string Config::toJson() const {
 }
 
 bool Config::has(const std::string& key) const {
-    (void)key;
-    return false;
+    return m_data.find(key) != m_data.end();
 }
 
 void Config::remove(const std::string& key) {
-    (void)key;
-}
-
-Exception::Exception(int code, const std::string& message)
-    : m_code(code), m_message(message) {}
-
-int Exception::code() const {
-    return m_code;
-}
-
-const char* Exception::what() const noexcept {
-    return m_message.c_str();
+    m_data.erase(key);
 }
 
 } // namespace util

@@ -428,7 +428,7 @@ void TcpServer::stop() {
         m_server_socket = INVALID_SOCKET_CHECK;
     }
 
-    std::lock_guard<std::mutex> lock(m_clients_mutex);
+    base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
     for (auto& pair : m_clients) {
 #if defined(_WIN32) || defined(_WIN64)
         closesocket(pair.second);
@@ -476,7 +476,7 @@ void TcpServer::acceptLoop() {
             std::string clientIpStr(clientIp);
 
             {
-                std::lock_guard<std::mutex> lock(m_clients_mutex);
+                base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
                 m_clients[clientId] = client_socket;
                 m_client_ips[clientId] = clientIpStr;
             }
@@ -505,7 +505,7 @@ void TcpServer::acceptLoop() {
             std::string clientIpStr(clientIp);
 
             {
-                std::lock_guard<std::mutex> lock(m_clients_mutex);
+                base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
                 m_clients[clientId] = client_socket;
                 m_client_ips[clientId] = clientIpStr;
             }
@@ -573,7 +573,7 @@ void TcpServer::cleanupClient(int clientId) {
     SocketType clientSocket = INVALID_SOCKET_CHECK;
 
     {
-        std::lock_guard<std::mutex> lock(m_clients_mutex);
+        base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
         auto it = m_clients.find(clientId);
         if (it != m_clients.end()) {
             clientSocket = it->second;
@@ -596,7 +596,7 @@ void TcpServer::cleanupClient(int clientId) {
 }
 
 int TcpServer::sendToClient(int clientId, const std::string& data) {
-    std::lock_guard<std::mutex> lock(m_clients_mutex);
+    base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
     auto it = m_clients.find(clientId);
     if (it == m_clients.end()) {
         return -1;
@@ -607,7 +607,7 @@ int TcpServer::sendToClient(int clientId, const std::string& data) {
 }
 
 int TcpServer::broadcast(const std::string& data) {
-    std::lock_guard<std::mutex> lock(m_clients_mutex);
+    base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
     int successCount = 0;
 
     for (auto& pair : m_clients) {
@@ -621,7 +621,7 @@ int TcpServer::broadcast(const std::string& data) {
 }
 
 int TcpServer::getClientCount() const {
-    std::lock_guard<std::mutex> lock(m_clients_mutex);
+    base::util::LockGuard<base::util::RecursiveMutex> lock(m_clients_mutex);
     return (int)m_clients.size();
 }
 

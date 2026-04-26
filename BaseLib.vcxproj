@@ -160,17 +160,21 @@
     <ClCompile Include="src\net\udp.cpp" />
     <ClCompile Include="src\util\config.cpp" />
     <ClCompile Include="src\util\error.cpp" />
+    <ClCompile Include="src\util\lock.cpp" />
+    <ClCompile Include="src\util\thread.cpp" />
     <ClCompile Include="src\util\thread_pool.cpp" />
     <ClCompile Include="src\util\time.cpp" />
     <ClCompile Include="tests\test_all.cpp" />
     <ClCompile Include="tests\test_http.cpp" />
     <ClCompile Include="tests\test_io.cpp" />
+    <ClCompile Include="tests\test_lock.cpp" />
     <ClCompile Include="tests\test_logger.cpp" />
     <ClCompile Include="tests\test_main.cpp" />
     <ClCompile Include="tests\test_net.cpp" />
     <ClCompile Include="tests\test_random.cpp" />
     <ClCompile Include="tests\test_result.cpp" />
     <ClCompile Include="tests\test_smart_ptr.cpp" />
+    <ClCompile Include="tests\test_thread.cpp" />
     <ClCompile Include="tests\test_util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -185,7 +189,9 @@
     <ClInclude Include="include\net\udp.h" />
     <ClInclude Include="include\util\config.h" />
     <ClInclude Include="include\util\error.h" />
+    <ClInclude Include="include\util\lock.h" />
     <ClInclude Include="include\util\result.h" />
+    <ClInclude Include="include\util\thread.h" />
     <ClInclude Include="include\util\thread_pool.h" />
     <ClInclude Include="include\util\time.h" />
   </ItemGroup>
