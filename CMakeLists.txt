@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra)
+endif()
+
 set(SOURCE_FILES
     src/io/json.cpp
     src/io/xml.cpp
@@ -26,14 +32,21 @@ set(SOURCE_FILES
 
 add_library(BaseLib STATIC ${SOURCE_FILES})
 
+if(WIN32)
+    target_link_libraries(BaseLib PUBLIC ws2_32)
+endif()
+if(UNIX)
+    target_link_libraries(BaseLib PUBLIC pthread)
+endif()
+
 add_executable(test_all tests/test_all.cpp)
 target_link_libraries(test_all PRIVATE BaseLib)
 
+add_executable(test_io tests/test_io.cpp)
+target_link_libraries(test_io PRIVATE BaseLib)
+
 add_executable(test_smart_ptr tests/test_smart_ptr.cpp)
 target_link_libraries(test_smart_ptr PRIVATE BaseLib)
-
-# add_executable(test_random tests/test_random.cpp)
-# target_link_libraries(test_random PRIVATE BaseLib)
 
 add_executable(test_result tests/test_result.cpp)
 target_link_libraries(test_result PRIVATE BaseLib)
@@ -64,7 +77,6 @@ target_link_libraries(test_lock PRIVATE BaseLib)
 
 set_target_properties(BaseLib PROPERTIES
     VERSION 1.0.0
-    SOVERSION 1
     OUTPUT_NAME "BaseLib"
 )
 

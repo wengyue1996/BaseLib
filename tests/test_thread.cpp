@@ -208,6 +208,7 @@ void test_current_thread_id() {
 
     Thread::ThreadId mainId = Thread::getCurrentThreadId();
     assert(mainId != 0);
+    (void)mainId;
 
     std::atomic<Thread::ThreadId> threadId(0);
 

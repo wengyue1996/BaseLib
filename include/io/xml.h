@@ -28,9 +28,10 @@ public:
         bool hasAttribute(const std::string& name) const;
         void removeAttribute(const std::string& name);
 
-        Node addChild(const std::string& name);
-        Node addChild(const std::string& name, const std::string& text);
+        Node& addChild(const std::string& name);
+        Node& addChild(const std::string& name, const std::string& text);
         std::vector<Node> getChildren(const std::string& name = "") const;
+        const std::vector<Node>& getAllChildren() const;
         bool hasChildren() const;
         void removeChild(const Node& child);
         void clearChildren();

@@ -5,10 +5,14 @@ namespace base {
 namespace util {
 
 Exception::Exception(int code, const std::string& message)
-    : m_code(code), m_message(message), m_details("") {}
+    : m_code(code), m_message(message), m_details("") {
+    formatWhat();
+}
 
 Exception::Exception(int code, const std::string& message, const std::string& details)
-    : m_code(code), m_message(message), m_details(details) {}
+    : m_code(code), m_message(message), m_details(details) {
+    formatWhat();
+}
 
 int Exception::code() const {
     return m_code;
@@ -23,17 +27,21 @@ const std::string& Exception::details() const {
 }
 
 const char* Exception::what() const noexcept {
+    return m_what.c_str();
+}
+
+void Exception::setDetails(const std::string& details) {
+    m_details = details;
+    formatWhat();
+}
+
+void Exception::formatWhat() {
     std::ostringstream oss;
     oss << "[" << m_code << "] " << m_message;
     if (!m_details.empty()) {
         oss << " (" << m_details << ")";
     }
     m_what = oss.str();
-    return m_what.c_str();
-}
-
-void Exception::setDetails(const std::string& details) {
-    m_details = details;
 }
 
 std::map<ErrorCategory::Category, std::string> ErrorCategory::s_category_names = {
@@ -63,35 +71,6 @@ ErrorCategory::Category ErrorCategory::getCategory(int errorCode) {
     }
 }
 
-const std::string& ErrorCode::getErrorMessage(int errorCode) {
-    static std::map<int, std::string> error_messages = {
-        {SUCCESS, "Success"},
-        {INVALID_ARGUMENT, "Invalid argument"},
-        {NULL_POINTER, "Null pointer"},
-        {OUT_OF_RANGE, "Out of range"},
-        {INVALID_OPERATION, "Invalid operation"},
-        {NETWORK_TIMEOUT, "Network timeout"},
-        {NETWORK_CONNECTION_REFUSED, "Connection refused"},
-        {NETWORK_HOST_UNREACHABLE, "Host unreachable"},
-        {NETWORK_SOCKET_ERROR, "Socket error"},
-        {FILE_NOT_FOUND, "File not found"},
-        {FILE_PERMISSION_DENIED, "Permission denied"},
-        {FILE_ALREADY_EXISTS, "File already exists"},
-        {FILE_IO_ERROR, "File I/O error"},
-        {MEMORY_ALLOC_FAILED, "Memory allocation failed"},
-        {MEMORY_FREE_FAILED, "Memory free failed"},
-        {INVALID_CONFIG, "Invalid configuration"},
-        {INVALID_FORMAT, "Invalid format"},
-        {PARSE_ERROR, "Parse error"},
-        {UNKNOWN_ERROR, "Unknown error"}
-    };
-
-    auto it = error_messages.find(errorCode);
-    if (it != error_messages.end()) {
-        return it->second;
-    }
-    return error_messages[UNKNOWN_ERROR];
-}
 
 } // namespace util
 } // namespace base

@@ -34,49 +34,49 @@ void HttpResponse::addHeader(const std::string& name, const std::string& value) 
     m_headers[name] = value;
 }
 
-HttpClient::HttpClient()
+SimpleHttpClient::SimpleHttpClient()
     : m_port(80)
     , m_timeout_ms(5000)
 {
 }
 
-HttpClient::~HttpClient() {
+SimpleHttpClient::~SimpleHttpClient() {
 }
 
-void HttpClient::setHost(const std::string& host, int port) {
+void SimpleHttpClient::setHost(const std::string& host, int port) {
     m_host = host;
     m_port = port;
 }
 
-void HttpClient::setTimeout(int timeoutMs) {
+void SimpleHttpClient::setTimeout(int timeoutMs) {
     m_timeout_ms = timeoutMs;
 }
 
-void HttpClient::setHeader(const std::string& name, const std::string& value) {
+void SimpleHttpClient::setHeader(const std::string& name, const std::string& value) {
     m_custom_headers[name] = value;
 }
 
-void HttpClient::clearHeaders() {
+void SimpleHttpClient::clearHeaders() {
     m_custom_headers.clear();
 }
 
-HttpResponse HttpClient::get(const std::string& path) {
+HttpResponse SimpleHttpClient::get(const std::string& path) {
     return request("GET", path);
 }
 
-HttpResponse HttpClient::post(const std::string& path, const std::string& body) {
+HttpResponse SimpleHttpClient::post(const std::string& path, const std::string& body) {
     return request("POST", path, body);
 }
 
-HttpResponse HttpClient::put(const std::string& path, const std::string& body) {
+HttpResponse SimpleHttpClient::put(const std::string& path, const std::string& body) {
     return request("PUT", path, body);
 }
 
-HttpResponse HttpClient::del(const std::string& path) {
+HttpResponse SimpleHttpClient::del(const std::string& path) {
     return request("DELETE", path);
 }
 
-HttpResponse HttpClient::request(const std::string& method, const std::string& path, const std::string& body) {
+HttpResponse SimpleHttpClient::request(const std::string& method, const std::string& path, const std::string& body) {
     HttpResponse response;
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -94,8 +94,10 @@ HttpResponse HttpClient::request(const std::string& method, const std::string& p
         return response;
     }
 
-    struct hostent* he = gethostbyname(m_host.c_str());
-    if (he == NULL) {
+    struct addrinfo hints = {}, *result = nullptr;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    if (getaddrinfo(m_host.c_str(), std::to_string(m_port).c_str(), &hints, &result) != 0 || result == nullptr) {
 #if defined(_WIN32) || defined(_WIN64)
         closesocket(sock);
         WSACleanup();
@@ -107,9 +109,9 @@ HttpResponse HttpClient::request(const std::string& method, const std::string& p
 
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    memcpy(&server_addr.sin_addr, he->h_addr_list[0], he->h_length);
+    memcpy(&server_addr, result->ai_addr, sizeof(server_addr));
     server_addr.sin_port = htons(m_port);
+    freeaddrinfo(result);
 
     if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
 #if defined(_WIN32) || defined(_WIN64)
@@ -157,7 +159,7 @@ HttpResponse HttpClient::request(const std::string& method, const std::string& p
     return response;
 }
 
-std::string HttpClient::buildRequest(const std::string& method, const std::string& path,
+std::string SimpleHttpClient::buildRequest(const std::string& method, const std::string& path,
                                     const std::string& body,
                                     const std::map<std::string, std::string>& headers) {
     std::ostringstream oss;
@@ -185,7 +187,7 @@ std::string HttpClient::buildRequest(const std::string& method, const std::strin
     return oss.str();
 }
 
-HttpResponse HttpClient::parseResponse(const std::string& rawResponse) {
+HttpResponse SimpleHttpClient::parseResponse(const std::string& rawResponse) {
     HttpResponse response;
 
     size_t headerEnd = rawResponse.find("\r\n\r\n");
@@ -235,7 +237,7 @@ HttpResponse HttpClient::parseResponse(const std::string& rawResponse) {
     return response;
 }
 
-std::string HttpClient::urlEncode(const std::string& value) {
+std::string SimpleHttpClient::urlEncode(const std::string& value) {
     std::ostringstream escaped;
     escaped.fill('0');
     escaped << std::hex;
@@ -253,7 +255,7 @@ std::string HttpClient::urlEncode(const std::string& value) {
     return escaped.str();
 }
 
-std::string HttpClient::urlDecode(const std::string& value) {
+std::string SimpleHttpClient::urlDecode(const std::string& value) {
     std::ostringstream decoded;
 
     for (size_t i = 0; i < value.length(); ++i) {

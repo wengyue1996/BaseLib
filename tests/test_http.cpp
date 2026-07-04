@@ -29,16 +29,16 @@ void test_http_response() {
 void test_http_client_url_encoding() {
     std::cout << "Test URL Encoding..." << std::endl;
 
-    std::string encoded = HttpClient::urlEncode("hello world");
+    std::string encoded = SimpleHttpClient::urlEncode("hello world");
     assert(encoded == "hello%20world");
 
-    std::string encoded2 = HttpClient::urlEncode("a=1&b=2");
+    std::string encoded2 = SimpleHttpClient::urlEncode("a=1&b=2");
     assert(encoded2 == "a%3D1%26b%3D2");
 
-    std::string decoded = HttpClient::urlDecode("hello%20world");
+    std::string decoded = SimpleHttpClient::urlDecode("hello%20world");
     assert(decoded == "hello world");
 
-    std::string decoded2 = HttpClient::urlDecode("a%3D1%26b%3D2");
+    std::string decoded2 = SimpleHttpClient::urlDecode("a%3D1%26b%3D2");
     assert(decoded2 == "a=1&b=2");
 
     std::cout << "  PASSED" << std::endl;
@@ -47,7 +47,7 @@ void test_http_client_url_encoding() {
 void test_http_client_basic() {
     std::cout << "Test HttpClient Basic..." << std::endl;
 
-    HttpClient client;
+    SimpleHttpClient client;
     client.setHost("example.com", 80);
     client.setTimeout(3000);
 

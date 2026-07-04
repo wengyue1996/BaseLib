@@ -48,12 +48,12 @@ void XmlDocument::Node::removeAttribute(const std::string& name) {
     m_attributes.erase(name);
 }
 
-XmlDocument::Node XmlDocument::Node::addChild(const std::string& name) {
+XmlDocument::Node& XmlDocument::Node::addChild(const std::string& name) {
     m_children.push_back(Node(name));
     return m_children.back();
 }
 
-XmlDocument::Node XmlDocument::Node::addChild(const std::string& name, const std::string& text) {
+XmlDocument::Node& XmlDocument::Node::addChild(const std::string& name, const std::string& text) {
     m_children.push_back(Node(name, text));
     return m_children.back();
 }
@@ -66,6 +66,10 @@ std::vector<XmlDocument::Node> XmlDocument::Node::getChildren(const std::string&
         }
     }
     return result;
+}
+
+const std::vector<XmlDocument::Node>& XmlDocument::Node::getAllChildren() const {
+    return m_children;
 }
 
 bool XmlDocument::Node::hasChildren() const {
@@ -206,36 +210,64 @@ static std::string decodeXmlText(const std::string& str) {
 
 void XmlDocument::parseElement(const std::string& xmlStr, size_t& pos, Node& node) {
     skipWhitespace(xmlStr, pos);
-    if (pos < xmlStr.size() && xmlStr[pos] == '<') {
+    if (pos >= xmlStr.size() || xmlStr[pos] != '<') {
+        return;
+    }
+    ++pos;
+
+    std::string name;
+    while (pos < xmlStr.size() && xmlStr[pos] != ' ' && xmlStr[pos] != '>' && xmlStr[pos] != '/') {
+        name += xmlStr[pos++];
+    }
+    node.setName(name);
+
+    skipWhitespace(xmlStr, pos);
+    if (pos < xmlStr.size() && xmlStr[pos] != '>' && xmlStr[pos] != '/') {
+        parseAttributes(xmlStr, pos, node);
+    }
+
+    skipWhitespace(xmlStr, pos);
+
+    if (pos < xmlStr.size() && xmlStr[pos] == '/') {
         ++pos;
-        std::string name;
-        while (pos < xmlStr.size() && xmlStr[pos] != ' ' && xmlStr[pos] != '>' && xmlStr[pos] != '/') {
-            name += xmlStr[pos++];
-        }
-        node.setName(name);
+        if (pos < xmlStr.size() && xmlStr[pos] == '>') ++pos;
+        return;
+    }
+
+    if (pos >= xmlStr.size() || xmlStr[pos] != '>') {
+        return;
+    }
+    ++pos;
+
+    while (pos < xmlStr.size()) {
         skipWhitespace(xmlStr, pos);
-        if (pos < xmlStr.size() && xmlStr[pos] != '>' && xmlStr[pos] != '/') {
-            parseAttributes(xmlStr, pos, node);
-        }
-        skipWhitespace(xmlStr, pos);
-        if (pos < xmlStr.size() && xmlStr[pos] == '/') {
-            ++pos;
-            if (pos < xmlStr.size() && xmlStr[pos] == '>') ++pos;
-            return;
-        }
-        if (pos < xmlStr.size() && xmlStr[pos] == '>') {
-            ++pos;
+        if (pos >= xmlStr.size()) break;
+
+        if (xmlStr[pos] == '<') {
+            if (pos + 1 < xmlStr.size() && xmlStr[pos + 1] == '/') {
+                pos += 2;
+                while (pos < xmlStr.size() && xmlStr[pos] != '>') ++pos;
+                if (pos < xmlStr.size()) ++pos;
+                return;
+            }
+            Node& childNode = node.addChild("");
+            parseElement(xmlStr, pos, childNode);
+        } else {
             std::string text;
             while (pos < xmlStr.size() && xmlStr[pos] != '<') {
                 text += xmlStr[pos++];
             }
-            node.setText(decodeXmlText(text));
-            if (pos < xmlStr.size() && xmlStr[pos] == '<') {
-                parseElement(xmlStr, pos, node);
+            std::string trimmed;
+            size_t start = 0, end = text.size();
+            while (start < end && std::isspace(text[start])) ++start;
+            while (end > start && std::isspace(text[end - 1])) --end;
+            if (start < end) {
+                std::string trimmedText = text.substr(start, end - start);
+                if (node.getText().empty()) {
+                    node.setText(decodeXmlText(trimmedText));
+                }
             }
         }
-        while (pos < xmlStr.size() && xmlStr[pos] != '>') ++pos;
-        if (pos < xmlStr.size()) ++pos;
     }
 }
 

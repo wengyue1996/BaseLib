@@ -195,6 +195,45 @@ void test_multithread() {
     std::cout << "  [PASS] (counter=" << num_threads * iterations << ")" << std::endl;
 }
 
+void test_custom_deleter() {
+    std::cout << "Test custom deleter..." << std::endl;
+
+    int delete_count = 0;
+    auto deleter = [&delete_count](TestObject* ptr) {
+        delete_count++;
+        delete ptr;
+    };
+
+    {
+        shared_ptr<TestObject> sp(new TestObject(42), deleter);
+        assert(sp);
+        assert(sp->getValue() == 42);
+        assert(delete_count == 0);
+    }
+    assert(delete_count == 1);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void test_custom_deleter_array() {
+    std::cout << "Test custom deleter array..." << std::endl;
+
+    int delete_count = 0;
+    auto deleter = [&delete_count](int* ptr) {
+        delete_count++;
+        delete[] ptr;
+    };
+
+    {
+        shared_ptr<int> sp(new int[10](), deleter);
+        assert(sp);
+        assert(delete_count == 0);
+    }
+    assert(delete_count == 1);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
 int main() {
     std::cout << "========================================" << std::endl;
     std::cout << "      Smart Pointer Unit Tests           " << std::endl;
@@ -207,6 +246,8 @@ int main() {
     test_shared_ptr_reset();
     test_shared_ptr_swap();
     test_make_shared();
+    test_custom_deleter();
+    test_custom_deleter_array();
     test_unique_ptr_basic();
     test_make_unique();
     test_weak_ptr_basic();
@@ -215,7 +256,7 @@ int main() {
 
     std::cout << std::endl;
     std::cout << "========================================" << std::endl;
-    std::cout << "  All Smart Pointer Tests Passed! (11)  " << std::endl;
+    std::cout << "  All Smart Pointer Tests Passed! (13)  " << std::endl;
     std::cout << "========================================" << std::endl;
 
     return 0;

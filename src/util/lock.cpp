@@ -3,6 +3,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <mutex>
+#include <condition_variable>
+#include <thread>
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <windows.h>
@@ -56,15 +58,36 @@ bool RecursiveMutex::tryLock(int timeout_ms) {
         return true;
     }
 
-    bool acquired = m_impl->mutex.try_lock();
-    if (acquired) {
+    if (timeout_ms < 0) {
+        m_impl->mutex.lock();
         m_impl->owner_thread_id = current_thread;
         m_impl->lock_count = 1;
         return true;
     }
 
-    m_impl->contention_count++;
-    return false;
+    if (timeout_ms == 0) {
+        if (m_impl->mutex.try_lock()) {
+            m_impl->owner_thread_id = current_thread;
+            m_impl->lock_count = 1;
+            return true;
+        }
+        m_impl->contention_count++;
+        return false;
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    while (!m_impl->mutex.try_lock()) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed >= timeout_ms) {
+            m_impl->contention_count++;
+            return false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    m_impl->owner_thread_id = current_thread;
+    m_impl->lock_count = 1;
+    return true;
 }
 
 void RecursiveMutex::unlock() {
@@ -131,14 +154,33 @@ bool NonRecursiveMutex::tryLock(int timeout_ms) {
         return true;
     }
 
-    bool acquired = m_impl->mutex.try_lock();
-    if (acquired) {
+    if (timeout_ms < 0) {
+        m_impl->mutex.lock();
         m_impl->owner_thread_id = current_thread;
         return true;
     }
 
-    m_impl->contention_count++;
-    return false;
+    if (timeout_ms == 0) {
+        if (m_impl->mutex.try_lock()) {
+            m_impl->owner_thread_id = current_thread;
+            return true;
+        }
+        m_impl->contention_count++;
+        return false;
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    while (!m_impl->mutex.try_lock()) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed >= timeout_ms) {
+            m_impl->contention_count++;
+            return false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    m_impl->owner_thread_id = current_thread;
+    return true;
 }
 
 void NonRecursiveMutex::unlock() {
@@ -221,53 +263,79 @@ bool LockScope::isAcquired() const {
 
 struct ReadWriteLock::Impl {
     std::string name;
-    std::mutex read_mutex;
-    std::mutex write_mutex;
-    std::atomic<int> read_count;
+    std::mutex mtx;
+    std::condition_variable cv_read;
+    std::condition_variable cv_write;
+    int read_count;
+    int write_count;
+    int write_waiters;
     std::thread::id write_owner;
-    std::atomic<int> read_waiters;
-    std::atomic<int> write_waiters;
 
     Impl(const std::string& n)
-        : name(n), read_count(0), read_waiters(0), write_waiters(0) {}
+        : name(n), read_count(0), write_count(0), write_waiters(0) {}
 };
 
-ReadWriteLock::ReadWriteLock(const std::string& name) 
+ReadWriteLock::ReadWriteLock(const std::string& name)
     : m_impl(std::make_unique<Impl>(name.empty() ? "ReadWriteLock" : name)) {
 }
 
 ReadWriteLock::~ReadWriteLock() = default;
 
 void ReadWriteLock::readLock() {
-    std::lock_guard<std::mutex> lock(m_impl->read_mutex);
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
+    m_impl->cv_read.wait(lock, [this] {
+        return m_impl->write_count == 0 && m_impl->write_waiters == 0;
+    });
     m_impl->read_count++;
 }
 
 bool ReadWriteLock::tryReadLock() {
-    std::lock_guard<std::mutex> lock(m_impl->read_mutex);
-    m_impl->read_count++;
-    return true;
+    return tryReadLock(0);
 }
 
 bool ReadWriteLock::tryReadLock(int timeout_ms) {
-    std::lock_guard<std::mutex> lock(m_impl->read_mutex);
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
+    if (timeout_ms < 0) {
+        m_impl->cv_read.wait(lock, [this] {
+            return m_impl->write_count == 0 && m_impl->write_waiters == 0;
+        });
+    } else if (timeout_ms == 0) {
+        if (m_impl->write_count > 0 || m_impl->write_waiters > 0) {
+            return false;
+        }
+    } else {
+        if (!m_impl->cv_read.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this] {
+            return m_impl->write_count == 0 && m_impl->write_waiters == 0;
+        })) {
+            return false;
+        }
+    }
     m_impl->read_count++;
     return true;
 }
 
 void ReadWriteLock::readUnlock() {
-    std::lock_guard<std::mutex> lock(m_impl->read_mutex);
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
     if (m_impl->read_count > 0) {
         m_impl->read_count--;
+    }
+    if (m_impl->read_count == 0 && m_impl->write_waiters > 0) {
+        m_impl->cv_write.notify_one();
     }
 }
 
 void ReadWriteLock::writeLock() {
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
     std::thread::id current_thread = std::this_thread::get_id();
     if (m_impl->write_owner == current_thread) {
         return;
     }
-    m_impl->write_mutex.lock();
+    m_impl->write_waiters++;
+    m_impl->cv_write.wait(lock, [this] {
+        return m_impl->read_count == 0 && m_impl->write_count == 0;
+    });
+    m_impl->write_waiters--;
+    m_impl->write_count = 1;
     m_impl->write_owner = current_thread;
 }
 
@@ -276,24 +344,47 @@ bool ReadWriteLock::tryWriteLock() {
 }
 
 bool ReadWriteLock::tryWriteLock(int timeout_ms) {
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
     std::thread::id current_thread = std::this_thread::get_id();
     if (m_impl->write_owner == current_thread) {
         return true;
     }
-
-    bool acquired = m_impl->write_mutex.try_lock();
-    if (acquired) {
-        m_impl->write_owner = current_thread;
-        return true;
+    if (timeout_ms < 0) {
+        m_impl->write_waiters++;
+        m_impl->cv_write.wait(lock, [this] {
+            return m_impl->read_count == 0 && m_impl->write_count == 0;
+        });
+        m_impl->write_waiters--;
+    } else if (timeout_ms == 0) {
+        if (m_impl->read_count > 0 || m_impl->write_count > 0) {
+            return false;
+        }
+    } else {
+        m_impl->write_waiters++;
+        if (!m_impl->cv_write.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this] {
+            return m_impl->read_count == 0 && m_impl->write_count == 0;
+        })) {
+            m_impl->write_waiters--;
+            return false;
+        }
+        m_impl->write_waiters--;
     }
-    return false;
+    m_impl->write_count = 1;
+    m_impl->write_owner = current_thread;
+    return true;
 }
 
 void ReadWriteLock::writeUnlock() {
+    std::unique_lock<std::mutex> lock(m_impl->mtx);
     std::thread::id current_thread = std::this_thread::get_id();
     if (m_impl->write_owner == current_thread) {
         m_impl->write_owner = std::thread::id();
-        m_impl->write_mutex.unlock();
+        m_impl->write_count = 0;
+        if (m_impl->write_waiters > 0) {
+            m_impl->cv_write.notify_one();
+        } else {
+            m_impl->cv_read.notify_all();
+        }
     }
 }
 

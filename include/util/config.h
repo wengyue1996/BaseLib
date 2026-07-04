@@ -26,6 +26,7 @@ public:
 
     bool has(const std::string& key) const;
     void remove(const std::string& key);
+    void clear();
 
 private:
     std::map<std::string, std::string> m_data;
@@ -48,8 +49,11 @@ T Config::get(const std::string& key, const T& defaultValue) const {
         return defaultValue;
     }
     std::istringstream iss(it->second);
-    T value;
+    T value = defaultValue;
     iss >> value;
+    if (iss.fail()) {
+        return defaultValue;
+    }
     return value;
 }
 

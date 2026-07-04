@@ -21,11 +21,23 @@ template <typename T>
 struct ControlBlock : public ControlBlockBase {
     T* ptr;
 
-    template <typename Deleter>
-    ControlBlock(T* p, Deleter) : ptr(p) {}
+    ControlBlock(T* p) : ptr(p) {}
 
     void destroyObject() override {
         delete ptr;
+        ptr = nullptr;
+    }
+};
+
+template <typename T, typename Deleter>
+struct DeleterControlBlock : public ControlBlockBase {
+    T* ptr;
+    Deleter deleter;
+
+    DeleterControlBlock(T* p, Deleter d) : ptr(p), deleter(std::move(d)) {}
+
+    void destroyObject() override {
+        deleter(ptr);
         ptr = nullptr;
     }
 };
@@ -45,7 +57,15 @@ public:
     constexpr shared_ptr() noexcept : m_ptr(nullptr), m_block(nullptr) {}
 
     explicit shared_ptr(T* ptr)
-        : m_ptr(ptr), m_block(ptr ? new ControlBlock<T>(ptr, [](T* p){ delete p; }) : nullptr) {
+        : m_ptr(ptr), m_block(ptr ? new ControlBlock<T>(ptr) : nullptr) {
+        if (m_block) {
+            m_block->strong_ref.store(1);
+        }
+    }
+
+    template <typename Deleter>
+    shared_ptr(T* ptr, Deleter deleter)
+        : m_ptr(ptr), m_block(ptr ? new DeleterControlBlock<T, Deleter>(ptr, std::move(deleter)) : nullptr) {
         if (m_block) {
             m_block->strong_ref.store(1);
         }
@@ -137,14 +157,14 @@ private:
 
     void release() {
         if (m_block) {
-            if (m_block->strong_ref.fetch_sub(1) == 1) {
+            if (m_block->strong_ref.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 if (m_ptr) {
                     m_block->destroyObject();
                     m_ptr = nullptr;
                 }
-            }
-            if (m_block->strong_ref.load() == 0 && m_block->weak_ref.load() == 0) {
-                delete m_block;
+                if (m_block->weak_ref.load(std::memory_order_acquire) == 0) {
+                    delete m_block;
+                }
             }
             m_block = nullptr;
         }
@@ -316,8 +336,8 @@ private:
 
     void release() {
         if (m_block) {
-            if (m_block->weak_ref.fetch_sub(1) == 1) {
-                if (m_block->strong_ref.load() == 0) {
+            if (m_block->weak_ref.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                if (m_block->strong_ref.load(std::memory_order_acquire) == 0) {
                     delete m_block;
                 }
             }

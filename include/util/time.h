@@ -6,6 +6,20 @@
 namespace base {
 namespace util {
 
+struct DateTime {
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    int millisecond;
+
+    DateTime();
+    static DateTime now();
+    std::string format(const std::string& formatStr) const;
+};
+
 class Time {
 public:
     static int64_t timestamp();

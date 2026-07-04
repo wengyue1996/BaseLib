@@ -29,8 +29,15 @@ public:
     Json(int value);
     Json(double value);
     Json(const std::string& value);
+    Json(const char* value);
     Json(bool value);
     Json(std::nullptr_t);
+
+    Json(const Json& other);
+    Json(Json&& other) noexcept;
+    Json& operator=(const Json& other);
+    Json& operator=(Json&& other) noexcept;
+    ~Json();
 
     Type type() const;
 
@@ -42,15 +49,20 @@ public:
     bool isNull() const;
 
     Json& operator[](const std::string& key);
+    const Json& operator[](const std::string& key) const;
     bool has(const std::string& key) const;
     void remove(const std::string& key);
 
     Json& operator[](size_t index);
+    const Json& operator[](size_t index) const;
     size_t size() const;
     void push_back(const Json& value);
     void pop_back();
+    void clear();
 
     double asNumber() const;
+    int asInt() const;
+    double asDouble() const;
     const std::string& asString() const;
     bool asBool() const;
 

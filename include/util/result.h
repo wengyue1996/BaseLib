@@ -14,6 +14,10 @@ public:
         NULL_POINTER = 1002,
         OUT_OF_RANGE = 1003,
         INVALID_STATE = 1004,
+        NOT_IMPLEMENTED = 1005,
+        INVALID_CONFIG = 1006,
+
+        MEMORY_ALLOC_FAILED = 4001,
 
         NETWORK_ERROR = 2001,
         CONNECTION_FAILED = 2002,
@@ -24,6 +28,8 @@ public:
         BIND_FAILED = 2007,
         LISTEN_FAILED = 2008,
         ACCEPT_FAILED = 2009,
+        NETWORK_CONNECTION_REFUSED = 2010,
+        NETWORK_HOST_UNREACHABLE = 2011,
 
         FILE_NOT_FOUND = 3001,
         FILE_OPEN_FAILED = 3002,
@@ -31,10 +37,12 @@ public:
         FILE_WRITE_FAILED = 3004,
         DIRECTORY_NOT_FOUND = 3005,
         PERMISSION_DENIED = 3006,
+        FILE_ALREADY_EXISTS = 3007,
+        FILE_IO_ERROR = 3008,
 
-        JSON_PARSE_ERROR = 4001,
-        JSON_INVALID_TYPE = 4002,
-        JSON_KEY_NOT_FOUND = 4003,
+        JSON_PARSE_ERROR = 4101,
+        JSON_INVALID_TYPE = 4102,
+        JSON_KEY_NOT_FOUND = 4103,
 
         XML_PARSE_ERROR = 5001,
         XML_INVALID_FORMAT = 5002,
@@ -71,6 +79,9 @@ public:
             case NULL_POINTER: return "Null pointer";
             case OUT_OF_RANGE: return "Out of range";
             case INVALID_STATE: return "Invalid state";
+            case NOT_IMPLEMENTED: return "Not implemented";
+            case INVALID_CONFIG: return "Invalid configuration";
+            case MEMORY_ALLOC_FAILED: return "Memory allocation failed";
             case NETWORK_ERROR: return "Network error";
             case CONNECTION_FAILED: return "Connection failed";
             case CONNECTION_TIMEOUT: return "Connection timeout";
@@ -80,19 +91,32 @@ public:
             case BIND_FAILED: return "Bind failed";
             case LISTEN_FAILED: return "Listen failed";
             case ACCEPT_FAILED: return "Accept failed";
+            case NETWORK_CONNECTION_REFUSED: return "Connection refused";
+            case NETWORK_HOST_UNREACHABLE: return "Host unreachable";
             case FILE_NOT_FOUND: return "File not found";
             case FILE_OPEN_FAILED: return "File open failed";
             case FILE_READ_FAILED: return "File read failed";
             case FILE_WRITE_FAILED: return "File write failed";
             case DIRECTORY_NOT_FOUND: return "Directory not found";
             case PERMISSION_DENIED: return "Permission denied";
+            case FILE_ALREADY_EXISTS: return "File already exists";
+            case FILE_IO_ERROR: return "File I/O error";
             case JSON_PARSE_ERROR: return "JSON parse error";
             case JSON_INVALID_TYPE: return "JSON invalid type";
             case JSON_KEY_NOT_FOUND: return "JSON key not found";
             case XML_PARSE_ERROR: return "XML parse error";
             case XML_INVALID_FORMAT: return "XML invalid format";
+            case THREAD_ERROR: return "Thread error";
+            case THREAD_CREATE_FAILED: return "Thread create failed";
+            case THREAD_JOIN_FAILED: return "Thread join failed";
+            case DEADLOCK: return "Deadlock detected";
+            case UNKNOWN_ERROR: return "Unknown error";
             default: return "Unknown error";
         }
+    }
+
+    static std::string getErrorMessage(Code code) {
+        return getDefaultMessage(code);
     }
 
 private:
@@ -132,8 +156,8 @@ public:
         return r;
     }
 
-    bool isSuccess() const { return m_error.isSuccess() && m_has_value; }
-    bool isError() const { return m_error.isError() || !m_has_value; }
+    bool isSuccess() const { return m_error.isSuccess(); }
+    bool isError() const { return m_error.isError(); }
     bool hasValue() const { return m_has_value; }
 
     const T& value() const { return m_value; }

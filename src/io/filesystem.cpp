@@ -141,15 +141,62 @@ bool FileSystem::deleteDirectory(const std::string& path) {
 #endif
 }
 
+bool FileSystem::deleteDirectoryRecursive(const std::string& path) {
+    if (!directoryExists(path)) return false;
+
+    auto entries = listDirectory(path, false);
+    for (const auto& entry : entries) {
+        std::string fullPath = joinPath(path, entry);
+        if (directoryExists(fullPath)) {
+            if (!deleteDirectoryRecursive(fullPath)) return false;
+        } else {
+            if (!deleteFile(fullPath)) return false;
+        }
+    }
+    return deleteDirectory(path);
+}
+
+std::string FileSystem::getLastError() {
+#if defined(_WIN32) || defined(_WIN64)
+    DWORD err = GetLastError();
+    if (err == 0) return "";
+    char buffer[256];
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   NULL, err, 0, buffer, sizeof(buffer), NULL);
+    return std::string(buffer);
+#else
+    return std::string(strerror(errno));
+#endif
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+static std::wstring utf8ToWide(const std::string& str) {
+    if (str.empty()) return std::wstring();
+    int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
+    std::wstring result(len, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &result[0], len);
+    return result;
+}
+
+static std::string wideToUtf8(const std::wstring& wstr) {
+    if (wstr.empty()) return std::string();
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), static_cast<int>(wstr.size()), NULL, 0, NULL, NULL);
+    std::string result(len, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), static_cast<int>(wstr.size()), &result[0], len, NULL, NULL);
+    return result;
+}
+#endif
+
 std::vector<std::string> FileSystem::listDirectory(const std::string& path, bool recursive) {
     std::vector<std::string> result;
 #if defined(_WIN32) || defined(_WIN64)
-    WIN32_FIND_DATAA findData;
-    HANDLE hFind = FindFirstFileA((path + "\\*").c_str(), &findData);
+    std::wstring wpath = utf8ToWide(path + "\\*");
+    WIN32_FIND_DATAW findData;
+    HANDLE hFind = FindFirstFileW(wpath.c_str(), &findData);
     if (hFind == INVALID_HANDLE_VALUE) return result;
 
     do {
-        std::string name = findData.cFileName;
+        std::string name = wideToUtf8(findData.cFileName);
         if (name != "." && name != "..") {
             std::string fullPath = joinPath(path, name);
             result.push_back(name);
@@ -160,7 +207,7 @@ std::vector<std::string> FileSystem::listDirectory(const std::string& path, bool
                 }
             }
         }
-    } while (FindNextFileA(hFind, &findData));
+    } while (FindNextFileW(hFind, &findData));
     FindClose(hFind);
 #else
     DIR* dir = opendir(path.c_str());
@@ -336,11 +383,18 @@ long FileSystem::File::tell() const {
 
 size_t FileSystem::File::size() const {
     if (!m_file) return 0;
-    long current = ftell((FILE*)m_file);
-    fseek((FILE*)m_file, 0, SEEK_END);
-    long fileSize = ftell((FILE*)m_file);
-    fseek((FILE*)m_file, current, SEEK_SET);
-    return fileSize;
+#if defined(_WIN32) || defined(_WIN64)
+    int fd = _fileno((FILE*)m_file);
+    if (fd < 0) return 0;
+    return _filelength(fd);
+#else
+    struct stat st;
+    int fd = fileno((FILE*)m_file);
+    if (fd < 0 || fstat(fd, &st) != 0) {
+        return 0;
+    }
+    return static_cast<size_t>(st.st_size);
+#endif
 }
 
 void FileSystem::File::flush() {
@@ -351,15 +405,17 @@ void FileSystem::File::flush() {
 
 bool FileSystem::File::readLine(std::string& line) {
     if (!m_file) return false;
-    char buffer[4096];
-    if (fgets(buffer, sizeof(buffer), (FILE*)m_file) != NULL) {
-        line = buffer;
-        if (!line.empty() && line[line.size() - 1] == '\n') {
-            line = line.substr(0, line.size() - 1);
+    line.clear();
+    int c;
+    while ((c = fgetc((FILE*)m_file)) != EOF && c != '\n') {
+        if (c != '\r') {
+            line += static_cast<char>(c);
         }
-        return true;
     }
-    return false;
+    if (c == EOF && line.empty()) {
+        return false;
+    }
+    return true;
 }
 
 bool FileSystem::File::writeLine(const std::string& line) {

@@ -30,10 +30,10 @@ private:
     std::map<std::string, std::string> m_headers;
 };
 
-class HttpClient {
+class SimpleHttpClient {
 public:
-    HttpClient();
-    ~HttpClient();
+    SimpleHttpClient();
+    ~SimpleHttpClient();
 
     void setHost(const std::string& host, int port = 80);
     void setTimeout(int timeoutMs);

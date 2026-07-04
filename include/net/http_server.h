@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include <cstdint>
 #include "../util/result.h"
 
 #ifdef _WIN32
@@ -138,6 +139,10 @@ public:
 
 private:
     void addRoute(const std::string& path, HttpMethod method, HttpHandler handler);
+    void acceptLoop();
+    void handleClient(intptr_t clientSocket, const std::string& clientIp, int clientPort);
+    void parseHttpRequest(const std::string& raw, HttpRequest& req);
+    void processRequest(const HttpRequest& req, HttpResponse& res);
 
     struct Route {
         std::string path;
@@ -147,7 +152,7 @@ private:
 
     ServerConfig m_config;
     std::atomic<bool> m_running;
-    int m_serverSocket;
+    intptr_t m_serverSocket;
     std::vector<std::thread> m_workerThreads;
     std::vector<MiddlewareHandler> m_middlewares;
     std::vector<Route> m_routes;

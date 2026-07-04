@@ -1,3 +1,6 @@
+#ifndef THREAD_POOL_H
+#define THREAD_POOL_H
+
 #include <functional>
 #include <future>
 #include <vector>
@@ -6,6 +9,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <memory>
 
 namespace base {
 namespace util {
@@ -21,14 +25,23 @@ public:
     void shutdown();
     bool isRunning() const;
     size_t getThreadCount() const;
+    size_t getTaskCount() const;
+
+    void pause();
+    void resume();
+    bool isPaused() const;
+    void waitAll();
 
 private:
     std::vector<std::thread> m_threads;
     std::queue<std::function<void()>> m_tasks;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_condition;
+    std::condition_variable m_done_condition;
     std::atomic<bool> m_running;
+    std::atomic<bool> m_paused;
     size_t m_thread_count;
+    size_t m_active_tasks;
 
     void workerThread();
 };
@@ -50,3 +63,5 @@ auto ThreadPool::submit(Func&& func, Args&&... args) -> std::future<decltype(fun
 
 } // namespace util
 } // namespace base
+
+#endif // THREAD_POOL_H

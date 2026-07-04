@@ -12,10 +12,30 @@
 #include <psapi.h>
 #undef ERROR
 #undef FATAL
+#else
+#include <errno.h>
 #endif
 
 namespace base {
 namespace log {
+
+namespace {
+
+bool createLogDirectory(const std::string& dir) {
+#ifdef _WIN32
+    if (CreateDirectoryA(dir.c_str(), NULL) != 0) {
+        return true;
+    }
+    return GetLastError() == ERROR_ALREADY_EXISTS;
+#else
+    if (mkdir(dir.c_str(), 0755) == 0) {
+        return true;
+    }
+    return errno == EEXIST;
+#endif
+}
+
+} // anonymous namespace
 
 LoggerConfig Logger::s_config;
 std::string Logger::s_logDir = "logs";
@@ -45,11 +65,7 @@ void Logger::init(const LoggerConfig& config) {
         s_logFile.close();
     }
 
-#ifdef _WIN32
-    system(("mkdir " + s_logDir).c_str());
-#else
-    system(("mkdir -p " + s_logDir).c_str());
-#endif
+    createLogDirectory(s_logDir);
 
     if (!openLogFile()) {
         std::cerr << "[Logger] Failed to open log file!" << std::endl;
@@ -160,8 +176,15 @@ std::string Logger::getCurrentTime() {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         now.time_since_epoch()) % 1000;
 
+    std::tm tm_buf = {};
+#ifdef _WIN32
+    localtime_s(&tm_buf, &time);
+#else
+    localtime_r(&time, &tm_buf);
+#endif
+
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
+    ss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S");
     ss << "." << std::setfill('0') << std::setw(3) << ms.count();
 
     return ss.str();
@@ -171,8 +194,15 @@ std::string Logger::getCurrentTimeForFilename() {
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
 
+    std::tm tm_buf = {};
+#ifdef _WIN32
+    localtime_s(&tm_buf, &time);
+#else
+    localtime_r(&time, &tm_buf);
+#endif
+
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%Y%m%d%H%M%S");
+    ss << std::put_time(&tm_buf, "%Y%m%d%H%M%S");
 
     return ss.str();
 }

@@ -1,11 +1,13 @@
 #include "../include/util/config.h"
 #include "../include/util/error.h"
+#include "../include/util/result.h"
 #include "../include/util/thread_pool.h"
 #include "../include/util/time.h"
 #include <iostream>
 #include <cassert>
 
 using namespace base::util;
+using base::ErrorCode;
 
 void testConfig() {
     std::cout << "Testing Config..." << std::endl;
@@ -23,6 +25,15 @@ void testConfig() {
 
     config.remove("value");
     assert(!config.has("value"));
+
+    // Boundary: missing key returns default
+    assert(config.get("missing", std::string("default")) == "default");
+    assert(config.get("missing_int", 999) == 999);
+    assert(config.get("missing_bool", true) == true);
+
+    // Boundary: invalid value returns default
+    config.set("str_val", "hello");
+    assert(config.get("str_val", 0) == 0);
 
     std::string jsonStr = config.toJson();
     assert(jsonStr.find("name") != std::string::npos);
@@ -64,11 +75,21 @@ void testThreadPool() {
     assert(future.get() == 1);
     assert(pool.getTaskCount() == 0);
 
-    // ThreadPool pause/resume not implemented
-    // pool.pause();
-    // assert(pool.isPaused());
-    // pool.resume();
-    // assert(!pool.isPaused());
+    // Pause/Resume
+    pool.pause();
+    assert(pool.isPaused());
+    pool.resume();
+    assert(!pool.isPaused());
+
+    // waitAll
+    {
+        std::atomic<int> counter(0);
+        for (int i = 0; i < 4; ++i) {
+            pool.submit([&counter]() { counter++; });
+        }
+        pool.waitAll();
+        assert(counter.load() == 4);
+    }
 
     pool.shutdown();
     assert(!pool.isRunning());
@@ -81,9 +102,11 @@ void testTime() {
 
     int64_t ts = Time::timestamp();
     assert(ts > 0);
+    (void)ts;
 
     int64_t tsMillis = Time::timestampMillis();
     assert(tsMillis > 0);
+    (void)tsMillis;
 
     std::string date = Time::getCurrentDate();
     assert(date.find('-') != std::string::npos);
@@ -95,9 +118,13 @@ void testTime() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     assert(timer.elapsedMilliseconds() >= 100);
 
-    // DateTime not implemented
-    // Time::DateTime dt(2026, 4, 26, 12, 30, 0);
-    // assert(dt.getYear() == 2026);
+    // DateTime
+    DateTime dt = DateTime::now();
+    assert(dt.year >= 2026);
+    assert(dt.month >= 1 && dt.month <= 12);
+    assert(dt.day >= 1 && dt.day <= 31);
+    std::string formatted = dt.format("%Y-%m-%d");
+    assert(!formatted.empty());
 
     std::cout << "Time tests passed!" << std::endl;
 }

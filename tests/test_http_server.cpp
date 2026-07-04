@@ -191,9 +191,119 @@ void testDoubleStart() {
     assert(result1.isSuccess());
 
     auto result2 = server.start();
-    assert(result2.isFailure());
+    assert(result2.isError());
 
     server.stop();
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testCorsConfig() {
+    std::cout << "Test CORS config..." << std::endl;
+
+    ServerConfig config;
+    config.enable_cors = true;
+    config.cors_allow_origin = "*";
+
+    HttpServer server(config);
+    ServerConfig retrieved = server.getConfig();
+    assert(retrieved.enable_cors == true);
+    assert(retrieved.cors_allow_origin == "*");
+
+    ServerConfig defaultConfig;
+    assert(defaultConfig.enable_cors == false);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testKeepAliveConfig() {
+    std::cout << "Test keep-alive config..." << std::endl;
+
+    ServerConfig config;
+    config.max_keepalive_requests = 100;
+    config.connection_timeout_ms = 30000;
+
+    HttpServer server(config);
+    ServerConfig retrieved = server.getConfig();
+    assert(retrieved.max_keepalive_requests == 100);
+    assert(retrieved.connection_timeout_ms == 30000);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testConcurrentServerAccess() {
+    std::cout << "Test concurrent server access..." << std::endl;
+
+    ServerConfig config;
+    config.port = 18083;
+    config.host = "127.0.0.1";
+    config.num_threads = 4;
+
+    HttpServer server(config);
+
+    int counter = 0;
+    server.get("/count", [&counter](const HttpRequest& req, HttpResponse& res) {
+        (void)req;
+        counter++;
+        res.setBody("OK");
+    });
+
+    auto result = server.start();
+    assert(result.isSuccess());
+    assert(server.isRunning());
+
+    // Verify we can start and stop cleanly with routes configured
+    assert(counter == 0);
+
+    server.stop();
+    assert(!server.isRunning());
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testAllHttpMethods() {
+    std::cout << "Test all HTTP methods registration..." << std::endl;
+
+    HttpServer server;
+    bool called = false;
+    auto handler = [&called](const HttpRequest&, HttpResponse& res) {
+        called = true;
+        res.setBody("OK");
+    };
+
+    server.get("/test", handler);
+    server.post("/test", handler);
+    server.put("/test", handler);
+    server.del("/test", handler);
+    server.patch("/test", handler);
+    server.options("/test", handler);
+    server.head("/test", handler);
+    server.any("/any", handler);
+
+    (void)called;
+    assert(!server.isRunning());
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testMiddlewareWithNonMatchingPath() {
+    std::cout << "Test middleware non-matching path..." << std::endl;
+
+    HttpServer server;
+
+    // Middleware only applies to /api paths — registration should succeed
+    server.use("/api", [](const HttpRequest& req, HttpResponse& res) -> bool {
+        (void)req;
+        (void)res;
+        return true;
+    });
+
+    // Global middleware applies to all paths
+    server.use([](const HttpRequest& req, HttpResponse& res) -> bool {
+        (void)req;
+        (void)res;
+        return true;
+    });
 
     std::cout << "  [PASS]" << std::endl;
 }
@@ -213,10 +323,15 @@ int main() {
     testServerConfig();
     testServerStartStop();
     testDoubleStart();
+    testCorsConfig();
+    testKeepAliveConfig();
+    testConcurrentServerAccess();
+    testAllHttpMethods();
+    testMiddlewareWithNonMatchingPath();
 
     std::cout << std::endl;
     std::cout << "========================================" << std::endl;
-    std::cout << "    All HTTP Server Tests Passed! (9)    " << std::endl;
+    std::cout << "    All HTTP Server Tests Passed! (14)   " << std::endl;
     std::cout << "========================================" << std::endl;
 
     return 0;

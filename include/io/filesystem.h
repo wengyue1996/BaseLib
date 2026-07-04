@@ -19,10 +19,12 @@ public:
     static bool createDirectory(const std::string& path);
     static bool createDirectories(const std::string& path);
     static bool deleteDirectory(const std::string& path);
+    static bool deleteDirectoryRecursive(const std::string& path);
     static std::vector<std::string> listDirectory(const std::string& path, bool recursive = false);
 
     static bool setPermissions(const std::string& path, int permissions);
     static int getPermissions(const std::string& path);
+    static std::string getLastError();
 
     static std::string getAbsolutePath(const std::string& path);
     static std::string getFileName(const std::string& path);

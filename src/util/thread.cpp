@@ -171,13 +171,24 @@ Result<void> Thread::start() {
 }
 
 void Thread::runLoop() {
+    {
+        std::unique_lock<std::mutex> lock(m_impl->state_mutex);
+        m_impl->state_cv.wait(lock, [this]() {
+            return !m_impl->should_pause || m_impl->should_stop;
+        });
+        if (m_impl->should_stop) {
+            setState(ThreadState::Stopped);
+            return;
+        }
+    }
+
     if (m_impl->run_callback) {
         try {
             m_impl->run_callback();
         } catch (...) {
         }
     }
-    
+
     std::lock_guard<std::mutex> lock(m_impl->state_mutex);
     if (m_impl->state != ThreadState::Stopping) {
         setState(ThreadState::Stopped);

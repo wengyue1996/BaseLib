@@ -427,7 +427,75 @@ void testIHttpRequestInterface() {
     assert(req->method() == HttpMethod::POST);
     assert(req->url() == "http://example.com/api");
     assert(req->body() == "test data");
-    assert(req->header("X-Request-ID") == "req-123");
+    assert(req->headers().find("X-Request-ID")->second == "req-123");
+    (void)req;
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testRedirectConfig() {
+    std::cout << "Test Redirect Config..." << std::endl;
+
+    RequestConfig config;
+    config.follow_redirects = false;
+    config.max_redirects = 0;
+
+    MockHttpClient client;
+
+    HttpResponse redirect_response;
+    redirect_response.setStatusCode(302);
+    redirect_response.setStatusMessage("Found");
+    redirect_response.addHeader("Location", "http://example.com/new");
+    redirect_response.setBody("");
+    client.setMockResponse(redirect_response);
+
+    auto result = client.get("http://example.com/old", config);
+    assert(result.isSuccess());
+    assert(result.value().statusCode() == 302);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testRetryConfig() {
+    std::cout << "Test Retry Config..." << std::endl;
+
+    RequestConfig config;
+    config.max_retries = 3;
+    config.retry_delay_ms = 100;
+
+    assert(config.max_retries == 3);
+    assert(config.retry_delay_ms == 100);
+
+    MockHttpClient client;
+
+    HttpResponse error_response;
+    error_response.setStatusCode(503);
+    error_response.setStatusMessage("Service Unavailable");
+    error_response.setBody("try again");
+    client.setMockResponse(error_response);
+
+    auto result = client.get("http://example.com/unstable", config);
+    assert(result.isSuccess());
+    assert(result.value().statusCode() == 503);
+
+    std::cout << "  [PASS]" << std::endl;
+}
+
+void testProxyConfig() {
+    std::cout << "Test Proxy Config..." << std::endl;
+
+    RequestConfig config;
+    config.proxy_host = "proxy.example.com";
+    config.proxy_port = 3128;
+
+    assert(config.proxy_host == "proxy.example.com");
+    assert(config.proxy_port == 3128);
+
+    HttpClient client;
+    client.setDefaultConfig(config);
+    RequestConfig retrieved = client.getDefaultConfig();
+    assert(retrieved.proxy_host == "proxy.example.com");
+    assert(retrieved.proxy_port == 3128);
 
     std::cout << "  [PASS]" << std::endl;
 }
@@ -455,10 +523,13 @@ int main() {
     testUrlEncoding();
     testIHttpResponseInterface();
     testIHttpRequestInterface();
+    testRedirectConfig();
+    testRetryConfig();
+    testProxyConfig();
 
     std::cout << std::endl;
     std::cout << "========================================" << std::endl;
-    std::cout << "   All HTTP Client Tests Passed! (17)   " << std::endl;
+    std::cout << "   All HTTP Client Tests Passed! (20)   " << std::endl;
     std::cout << "========================================" << std::endl;
 
     return 0;
